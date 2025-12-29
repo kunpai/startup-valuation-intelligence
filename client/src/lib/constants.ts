@@ -117,3 +117,41 @@ export const MOCK_MILESTONES = [
     description: "Next major equity financing event."
   }
 ];
+
+export const METHODOLOGY_DESCRIPTIONS = [
+  {
+    id: "blended",
+    name: "Blended Approach",
+    description: "Combines multiple methodologies for a balanced view.",
+    details: "Recommended for most startups. Uses a weighted average of VC Method, Scorecard, and Market Comps to reduce bias.",
+    suitableFor: "All stages"
+  },
+  {
+    id: "vc_method",
+    name: "Venture Capital Method",
+    description: "Back-solves valuation based on expected investor ROI.",
+    details: "Focuses on terminal value at exit and works backward to present day value based on required return rates.",
+    suitableFor: "Pre-revenue to Series A"
+  },
+  {
+    id: "market_comps",
+    name: "Market Comparables",
+    description: "Benchmarks against similar companies in your sector.",
+    details: "Derives valuation multiples (e.g., Revenue Multiple) from public or private peer data.",
+    suitableFor: "Revenue generating companies"
+  },
+  {
+    id: "scorecard",
+    name: "Scorecard Method",
+    description: "Adjusts average valuations based on qualitative factors.",
+    details: "Starts with an average pre-money valuation for your region/sector and adjusts up or down based on team, product, market size, etc.",
+    suitableFor: "Early stage / Pre-seed"
+  },
+  {
+    id: "dcf",
+    name: "Discounted Cash Flow",
+    description: "Projects future cash flows and discounts them to today.",
+    details: "Highly sensitive to assumptions. Best for companies with predictable cash flows.",
+    suitableFor: "Later stage / Mature"
+  }
+];

@@ -23,15 +23,26 @@ interface QualitativeScores {
   market: number;
 }
 
+interface ValuationHistoryItem {
+  round: string;
+  date: string;
+  amount: number;
+  valuation: number;
+}
+
 interface ValuationContextType {
   isDemoMode: boolean;
   companyProfile: CompanyProfile;
   financials: Financials;
   qualitative: QualitativeScores;
+  valuationHistory: ValuationHistoryItem[];
+  selectedMethodology: string;
   setDemoMode: (isDemo: boolean) => void;
   updateProfile: (data: Partial<CompanyProfile>) => void;
   updateFinancials: (data: Partial<Financials>) => void;
   updateQualitative: (data: Partial<QualitativeScores>) => void;
+  updateHistory: (data: ValuationHistoryItem[]) => void;
+  setMethodology: (method: string) => void;
   completeOnboarding: () => void;
   resetData: () => void;
 }
@@ -65,6 +76,8 @@ export function ValuationProvider({ children }: { children: ReactNode }) {
   const [companyProfile, setCompanyProfile] = useState<CompanyProfile>(DEFAULT_PROFILE);
   const [financials, setFinancials] = useState<Financials>(DEFAULT_FINANCIALS);
   const [qualitative, setQualitative] = useState<QualitativeScores>(DEFAULT_QUALITATIVE);
+  const [valuationHistory, setValuationHistory] = useState<ValuationHistoryItem[]>([]);
+  const [selectedMethodology, setSelectedMethodology] = useState<string>("blended");
 
   const updateProfile = (data: Partial<CompanyProfile>) => {
     setCompanyProfile(prev => ({ ...prev, ...data }));
@@ -78,6 +91,14 @@ export function ValuationProvider({ children }: { children: ReactNode }) {
     setQualitative(prev => ({ ...prev, ...data }));
   };
 
+  const updateHistory = (data: ValuationHistoryItem[]) => {
+    setValuationHistory(data);
+  };
+
+  const setMethodology = (method: string) => {
+    setSelectedMethodology(method);
+  };
+
   const completeOnboarding = () => {
     setIsDemoMode(false);
   };
@@ -87,6 +108,8 @@ export function ValuationProvider({ children }: { children: ReactNode }) {
     setCompanyProfile(DEFAULT_PROFILE);
     setFinancials(DEFAULT_FINANCIALS);
     setQualitative(DEFAULT_QUALITATIVE);
+    setValuationHistory([]);
+    setSelectedMethodology("blended");
   };
 
   return (
@@ -95,10 +118,14 @@ export function ValuationProvider({ children }: { children: ReactNode }) {
       companyProfile,
       financials,
       qualitative,
+      valuationHistory,
+      selectedMethodology,
       setDemoMode: setIsDemoMode,
       updateProfile,
       updateFinancials,
       updateQualitative,
+      updateHistory,
+      setMethodology,
       completeOnboarding,
       resetData
     }}>
