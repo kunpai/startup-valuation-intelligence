@@ -20,10 +20,15 @@ import {
   PieChart,
   Briefcase,
   History,
+  HelpCircle,
 } from "lucide-react";
 import { useLocation, Link } from "wouter";
 
-export function AppSidebar() {
+interface AppSidebarProps {
+    onStartTour?: () => void;
+}
+
+export function AppSidebar({ onStartTour }: AppSidebarProps) {
   const [location] = useLocation();
 
   const items = [
@@ -31,26 +36,31 @@ export function AppSidebar() {
       title: "Dashboard",
       url: "/",
       icon: LayoutDashboard,
+      tourId: "dashboard-nav",
     },
     {
       title: "Valuation Engine",
       url: "/calculator",
       icon: Calculator,
+      tourId: "valuation-engine-nav",
     },
     {
       title: "Market Comparables",
       url: "/comparables",
       icon: Briefcase,
+      tourId: "comps-nav",
     },
     {
       title: "History & Scenarios",
       url: "/scenarios",
       icon: History,
+      tourId: "scenarios-nav",
     },
     {
       title: "Reports",
       url: "/reports",
       icon: FileText,
+      tourId: "reports-nav",
     },
   ];
 
@@ -78,6 +88,7 @@ export function AppSidebar() {
                     isActive={location === item.url}
                     tooltip={item.title}
                     size="lg"
+                    data-tour={item.tourId}
                     className="data-[active=true]:bg-primary/10 data-[active=true]:text-primary transition-all duration-200"
                   >
                     <Link href={item.url}>
@@ -94,6 +105,16 @@ export function AppSidebar() {
         <SidebarGroup className="mt-auto">
           <SidebarGroupContent>
             <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton 
+                    tooltip="Start Tour" 
+                    onClick={onStartTour}
+                    className="text-primary hover:text-primary hover:bg-primary/10 transition-colors"
+                >
+                  <HelpCircle className="!size-5" />
+                  <span>Start Tour</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
               <SidebarMenuItem>
                 <SidebarMenuButton tooltip="Settings">
                   <Settings className="!size-5" />

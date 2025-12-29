@@ -99,7 +99,7 @@ export default function Dashboard() {
           <h1 className="text-3xl font-bold tracking-tight font-heading">Valuation Dashboard</h1>
           <p className="text-muted-foreground mt-1">Real-time valuation intelligence for your startup.</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2" data-tour="quick-actions">
           <Link href="/reports">
             <Button variant="outline" className="gap-2">
               <ArrowUpRight className="size-4" /> Export Report
