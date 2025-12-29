@@ -4,6 +4,7 @@ import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
 import { ChevronRight, ChevronLeft, X, Check } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { useLocation } from "wouter";
 
 interface TourGuideProps {
   run: boolean;
@@ -15,58 +16,96 @@ interface Step {
   title?: string;
   content: React.ReactNode;
   placement?: 'top' | 'bottom' | 'left' | 'right' | 'center';
+  route?: string; // New: Optional route to navigate to
 }
 
 export function TourGuide({ run, setRun }: TourGuideProps) {
   const [currentStep, setCurrentStep] = useState(0);
   const [targetRect, setTargetRect] = useState<DOMRect | null>(null);
+  const [location, setLocation] = useLocation();
   
   const steps: Step[] = [
+    // --- Phase 1: Dashboard & High Level ---
     {
-      target: 'body', // Center modal
-      title: "Welcome to SVI Platform",
+      target: 'body',
+      title: "Welcome to Valuation Intelligence",
       content: (
         <div className="space-y-2">
-          <p>Let's take a quick tour of the Startup Valuation Intelligence dashboard.</p>
+          <p>This platform creates defensible startup valuations by blending quantitative data with qualitative scoring.</p>
+          <p className="text-xs text-muted-foreground mt-2">Let's walk through how we build your number, step-by-step.</p>
         </div>
       ),
       placement: 'center',
+      route: '/'
     },
     {
       target: '[data-tour="dashboard-nav"]',
-      title: "Dashboard",
-      content: 'Your command center. See your valuation summary, key metrics, and recent activity here.',
-      placement: 'right'
+      title: "Your Command Center",
+      content: "The Dashboard gives you a real-time pulse on your valuation. As you update metrics, this number updates instantly.",
+      placement: 'right',
+      route: '/'
     },
+    {
+      target: '[data-tour="methodology-chart"]',
+      title: "The Blended Approach",
+      content: "We don't rely on just one method. We combine VC methodology, Market Comps, Scorecards, and DCF analysis. This chart shows how much each method contributes to your final number.",
+      placement: 'left',
+      route: '/'
+    },
+    
+    // --- Phase 2: Calculator Deep Dive ---
     {
       target: '[data-tour="valuation-engine-nav"]',
-      title: "Valuation Engine",
-      content: 'The core calculator. Combine VC Method, Scorecard, and DCF models to triangulate your value.',
-      placement: 'right'
+      title: "The Engine Room",
+      content: "Let's go to the Valuation Engine where the magic happens. This is where you input your assumptions.",
+      placement: 'right',
+      route: '/calculator'
     },
     {
-      target: '[data-tour="comps-nav"]',
-      title: "Market Comparables",
-      content: 'Find similar companies and benchmark your metrics against real market data.',
-      placement: 'right'
+        target: '[data-tour="smart-weighting"]',
+        title: "Smart Weighting",
+        content: "Our AI automatically adjusts the weight of each method based on your stage. Pre-seed? We lean on qualitative scores. Series A? We lean on revenue.",
+        placement: 'bottom',
+        route: '/calculator'
     },
     {
-      target: '[data-tour="scenarios-nav"]',
-      title: "Scenarios",
-      content: 'Plan for the future. Model different funding rounds, exits, and growth scenarios.',
-      placement: 'right'
+        target: '[data-tour="scorecard-tab"]',
+        title: "Qualitative Scoring",
+        content: "Numbers aren't everything. The Scorecard method lets you value your Team, IP, and Market Size to justify a premium valuation.",
+        placement: 'bottom',
+        route: '/calculator'
+    },
+
+    // --- Phase 3: Market Comps ---
+    {
+        target: '[data-tour="comps-nav"]',
+        title: "Market Comparables",
+        content: "Investors will benchmark you against peers. Let's see how you stack up.",
+        placement: 'right',
+        route: '/comparables'
     },
     {
-      target: '[data-tour="reports-nav"]',
-      title: "Reports",
-      content: 'Generate investor-ready PDFs and one-pagers based on your valuation data.',
-      placement: 'right'
+        target: '[data-tour="comps-filter"]',
+        title: "Discovery Engine",
+        content: "Find relevant competitors by Sector, Stage, and Revenue. We pull data from recent funding rounds to give you accurate multiples.",
+        placement: 'right',
+        route: '/comparables'
+    },
+
+    // --- Phase 4: Output ---
+    {
+        target: '[data-tour="reports-nav"]',
+        title: "Investor Deal Room",
+        content: "Once you're done, generate a professional Deal Room report. This is your 'Investment Memo' ready for VCs.",
+        placement: 'right',
+        route: '/reports/deal-room'
     },
     {
-        target: '[data-tour="quick-actions"]',
-        title: "Quick Actions",
-        content: 'Quickly access common tasks like creating a new report or updating your metrics.',
-        placement: 'bottom'
+        target: '[data-tour="deal-room-export"]',
+        title: "Export & Share",
+        content: "Print this report to PDF or share a secure link. It explains the 'Why' behind your valuation to investors.",
+        placement: 'bottom',
+        route: '/reports/deal-room'
     }
   ];
 
@@ -77,32 +116,54 @@ export function TourGuide({ run, setRun }: TourGuideProps) {
       return;
     }
 
-    const updatePosition = () => {
-      const step = steps[currentStep];
-      if (step.target === 'body') {
-        setTargetRect(null); // Special case for center modal
+    const currentStepData = steps[currentStep];
+
+    // Handle Routing
+    if (currentStepData.route && location !== currentStepData.route) {
+        setLocation(currentStepData.route);
+        // Give time for route transition
+        setTimeout(updatePosition, 500); 
         return;
-      }
+    }
 
-      const element = document.querySelector(step.target);
-      if (element) {
-        const rect = element.getBoundingClientRect();
-        setTargetRect(rect);
-        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }
-    };
+    // Standard Position Update
+    updatePosition();
 
-    // Small delay to allow for rendering/animations
-    const timer = setTimeout(updatePosition, 100);
+    // Listeners
     window.addEventListener('resize', updatePosition);
     window.addEventListener('scroll', updatePosition);
 
     return () => {
-      clearTimeout(timer);
       window.removeEventListener('resize', updatePosition);
       window.removeEventListener('scroll', updatePosition);
     };
-  }, [currentStep, run]);
+  }, [currentStep, run, location]); // Re-run when step, run state, or location changes
+
+  const updatePosition = () => {
+      const step = steps[currentStep];
+      if (!step) return;
+
+      if (step.target === 'body') {
+        setTargetRect(null);
+        return;
+      }
+
+      // Try finding element with retries
+      const findElement = () => {
+          const element = document.querySelector(step.target);
+          if (element) {
+            const rect = element.getBoundingClientRect();
+            setTargetRect(rect);
+            element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          } else {
+              // Retry briefly if element mounting
+              setTimeout(findElement, 100);
+          }
+      };
+      
+      findElement();
+    };
+
 
   const handleNext = () => {
     if (currentStep < steps.length - 1) {

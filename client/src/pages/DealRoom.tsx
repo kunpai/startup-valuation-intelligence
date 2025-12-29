@@ -40,7 +40,7 @@ export default function DealRoom() {
             <h1 className="text-3xl font-bold font-heading">Investor Deal Room</h1>
             <p className="text-muted-foreground">Generated on {new Date().toLocaleDateString()}</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2" data-tour="deal-room-export">
             <Button variant="outline" className="gap-2" onClick={handlePrint}>
                 <Printer className="size-4" /> Print / PDF
             </Button>

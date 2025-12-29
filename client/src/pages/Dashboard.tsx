@@ -224,7 +224,7 @@ export default function Dashboard() {
 
         {/* Methodology Breakdown - Pie Chart */}
         <div className="col-span-3 grid gap-4 grid-rows-2">
-            <Card className="bg-card/50 backdrop-blur-sm border-primary/10 animate-in fade-in slide-in-from-right-8 duration-700 delay-300">
+            <Card className="bg-card/50 backdrop-blur-sm border-primary/10 animate-in fade-in slide-in-from-right-8 duration-700 delay-300" data-tour="methodology-chart">
             <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium">Methodology Weights</CardTitle>
             </CardHeader>

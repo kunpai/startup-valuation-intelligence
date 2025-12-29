@@ -105,7 +105,7 @@ export default function MarketComps() {
       <div className="grid lg:grid-cols-3 gap-6">
         
         {/* Left Column: Discovery Engine */}
-        <div className="lg:col-span-1 space-y-6">
+        <div className="lg:col-span-1 space-y-6" data-tour="comps-filter">
             <Card className="bg-card/50 border-primary/10">
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2">

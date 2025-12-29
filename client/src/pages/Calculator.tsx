@@ -318,7 +318,7 @@ export default function ValuationEngine() {
                 <TabsTrigger value="vc-method" className="gap-2 px-4">
                     <Calculator className="size-4" /> VC Method
                 </TabsTrigger>
-                <TabsTrigger value="scorecard" className="gap-2 px-4">
+                <TabsTrigger value="scorecard" className="gap-2 px-4" data-tour="scorecard-tab">
                     <Check className="size-4" /> Scorecard
                 </TabsTrigger>
                 <TabsTrigger value="market-comps" className="gap-2 px-4">
@@ -370,7 +370,7 @@ export default function ValuationEngine() {
                                 <CardTitle>Blended Valuation Summary</CardTitle>
                                 <CardDescription>Weighted average of all enabled methodologies</CardDescription>
                             </div>
-                            <div className="flex items-center gap-2 bg-secondary/30 px-3 py-1.5 rounded-full border border-border/50">
+                            <div className="flex items-center gap-2 bg-secondary/30 px-3 py-1.5 rounded-full border border-border/50" data-tour="smart-weighting">
                                 <Switch 
                                     id="smart-weighting" 
                                     checked={smartWeighting}
