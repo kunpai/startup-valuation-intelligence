@@ -17,7 +17,7 @@ import { ValuationProvider, useValuation } from "@/context/ValuationContext";
 import { ThemeProvider } from "@/components/theme-provider";
 
 function Router() {
-  const { isDemoMode } = useValuation();
+  const { isDemoMode, currentCompanyId } = useValuation();
 
   return (
     <Switch>
@@ -27,7 +27,8 @@ function Router() {
       <Route>
          <AppLayout>
             <Switch>
-                <Route path="/" component={Dashboard} />
+                {/* Show guide page as default for new users (demo mode with no company) */}
+                <Route path="/" component={isDemoMode && !currentCompanyId ? PlatformOverview : Dashboard} />
                 <Route path="/guide" component={PlatformOverview} />
                 <Route path="/calculator" component={Calculator} />
                 <Route path="/comparables" component={MarketComps} />

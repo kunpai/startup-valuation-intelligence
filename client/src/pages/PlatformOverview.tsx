@@ -40,7 +40,7 @@ export default function PlatformOverview() {
           Move beyond simple spreadsheets. Our platform blends quantitative models with qualitative scoring to tell the complete story of your startup's value.
         </p>
         <div className="flex items-center justify-center gap-4 pt-4">
-            <Link href="/calculator">
+            <Link href="/onboarding">
                 <Button size="lg" className="h-12 px-8 text-lg gap-2 shadow-xl shadow-primary/20 hover:shadow-primary/40 transition-all rounded-full">
                     Start Valuation <ArrowRight className="size-5" />
                 </Button>
@@ -220,9 +220,9 @@ export default function PlatformOverview() {
         <p className="text-lg text-muted-foreground max-w-xl mx-auto">
             Join hundreds of founders using data to drive their fundraising strategy.
         </p>
-        <Link href="/calculator">
+        <Link href="/onboarding">
             <Button size="lg" className="px-8 shadow-lg shadow-primary/20">
-                Launch Valuation Engine
+                Start Your Valuation
             </Button>
         </Link>
       </section>

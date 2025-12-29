@@ -31,38 +31,45 @@ import { useValuation } from "@/context/ValuationContext";
 import { useEffect } from "react";
 
 export default function Dashboard() {
-  const { isDemoMode, companyProfile, financials } = useValuation();
+  const { isDemoMode, companyProfile, financials, qualitative, calculatedValuation } = useValuation();
   const [, setLocation] = useLocation();
 
-  // Redirect to onboarding if not in demo mode and no data (though our context defaults to data, 
-  // in a real app we'd check if onboarding was completed. 
-  // Here we'll just rely on the user flow from /onboarding)
-  
   // Calculate dynamic blended valuation based on input
-  // Simple mock logic: Revenue * 12 + some constant based on demo mode
-  const displayValuation = isDemoMode 
-    ? 12500000 
-    : (financials.revenue * 15) + (financials.lastRoundValuation * 0.5);
+  const displayValuation = calculatedValuation 
+    ? calculatedValuation 
+    : isDemoMode 
+      ? 12500000 
+      : (financials.revenue * 15) + (financials.lastRoundValuation * 0.5);
 
   const displayValuationStr = `$${(displayValuation / 1000000).toFixed(1)}M`;
 
-  // Qualitative Data for Radar Chart
-  const radarData = [
-    { subject: 'Team', A: financials.revenue > 0 ? 85 : 60, B: 75, fullMark: 100 },
-    { subject: 'Market', A: 90, B: 80, fullMark: 100 },
-    { subject: 'Product', A: 80, B: 70, fullMark: 100 },
-    { subject: 'Traction', A: financials.growthRate > 10 ? 85 : 50, B: 65, fullMark: 100 },
-    { subject: 'Moat', A: 70, B: 60, fullMark: 100 },
-    { subject: 'Scalability', A: 75, B: 70, fullMark: 100 },
+  // Calculate runway from user's actual burn rate and cash balance
+  const runwayMonths = financials.burnRate > 0 
+    ? Math.round(financials.cashBalance / financials.burnRate) 
+    : 24; // Default if no burn rate
+
+  // Dynamic methodology breakdown based on user data
+  const methodologyBreakdown = [
+    { name: "Venture Capital", value: displayValuation * 0.3, fill: "hsl(var(--chart-1))" },
+    { name: "Scorecard", value: displayValuation * 0.25, fill: "hsl(var(--chart-2))" },
+    { name: "Market Comps", value: displayValuation * 0.25, fill: "hsl(var(--chart-3))" },
+    { name: "DCF", value: displayValuation * 0.2, fill: "hsl(var(--chart-5))" },
   ];
 
-  // Dynamic values based on context
+  // User's valuation history - combine last round with current
+  const valuationHistory = [
+    { date: "Last Round", valuation: financials.lastRoundValuation, label: "Previous" },
+    { date: "Current", valuation: displayValuation, label: "Now" },
+    { date: "Target", valuation: displayValuation * 1.5, label: "Series A" },
+  ];
+
+  // Dynamic qualitative data based on context
   const userRadarData = [
-      { subject: 'Team', score: 80, benchmark: 70 },
-      { subject: 'Market', score: 85, benchmark: 75 },
-      { subject: 'Product', score: 75, benchmark: 65 },
-      { subject: 'Growth', score: financials.growthRate > 20 ? 90 : 60, benchmark: 50 },
-      { subject: 'Moat', score: 70, benchmark: 60 },
+      { subject: 'Team', score: qualitative.team, benchmark: 70 },
+      { subject: 'Market', score: qualitative.market, benchmark: 75 },
+      { subject: 'Product', score: qualitative.product, benchmark: 65 },
+      { subject: 'Growth', score: Math.min(financials.growthRate * 4, 100), benchmark: 50 },
+      { subject: 'Runway', score: Math.min(runwayMonths * 5, 100), benchmark: 60 },
   ];
 
   return (
@@ -154,8 +161,10 @@ export default function Dashboard() {
             <Activity className="h-4 w-4 text-orange-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold font-heading">14 Months</div>
-            <p className="text-xs text-muted-foreground mt-1">Based on current burn</p>
+            <div className="text-2xl font-bold font-heading">{runwayMonths} Months</div>
+            <p className="text-xs text-muted-foreground mt-1">
+              ${(financials.cashBalance / 1000).toFixed(0)}k / ${(financials.burnRate / 1000).toFixed(0)}k burn
+            </p>
           </CardContent>
         </Card>
 
@@ -181,7 +190,7 @@ export default function Dashboard() {
           <CardContent className="pl-2">
             <div className="h-[300px] w-full">
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={MOCK_VALUATION_HISTORY} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                <AreaChart data={isDemoMode ? MOCK_VALUATION_HISTORY : valuationHistory} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
                   <defs>
                     <linearGradient id="colorValuation" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3}/>
@@ -235,7 +244,7 @@ export default function Dashboard() {
                     <ResponsiveContainer width="100%" height="100%">
                         <PieChart margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
                             <Pie
-                            data={MOCK_METHODOLOGY_BREAKDOWN}
+                            data={isDemoMode ? MOCK_METHODOLOGY_BREAKDOWN : methodologyBreakdown}
                             cx="50%"
                             cy="50%"
                             innerRadius={40}
@@ -243,7 +252,7 @@ export default function Dashboard() {
                             paddingAngle={5}
                             dataKey="value"
                             >
-                            {MOCK_METHODOLOGY_BREAKDOWN.map((entry, index) => (
+                            {(isDemoMode ? MOCK_METHODOLOGY_BREAKDOWN : methodologyBreakdown).map((entry, index) => (
                                 <Cell key={`cell-${index}`} fill={entry.fill} stroke="transparent" />
                             ))}
                             </Pie>
