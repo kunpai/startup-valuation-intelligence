@@ -1,0 +1,49 @@
+Title:
+🧮 Startup Valuation Intelligence Dashboard (SVI)
+Prompt:
+Build a full-stack interactive web app called Startup Valuation Intelligence Dashboard (SVI) using Next.js (React + TypeScript) for the frontend and either Python (FastAPI) or Node.js (Express) for the backend, with a simple PostgreSQL or Firebase database.
+The app should serve as a valuation intelligence calculator that founders can use to estimate and communicate the indicative valuation of their startup to investors — offering both quantitative insights and visual storytelling.
+🧠 Core Functionalities
+	1.	Valuation Calculator Engine
+	•	Accept and analyze key startup parameters:
+	•	Sector / Industry
+	•	Stage (Pre-Seed → Series D)
+	•	Annual or projected revenue (ARR/MRR)
+	•	Revenue growth rate (%)
+	•	Burn rate and runway
+	•	Team size and key hires
+	•	Customer metrics (CAC, LTV, Churn)
+	•	IP or technology defensibility score
+	•	Market size (TAM / SAM / SOM)
+	•	Founder experience (serial vs first-time founder)
+	•	Apply multiple valuation methodologies:
+	•	Venture Capital Method
+	•	Scorecard Method
+	•	Risk Factor Summation Method
+	•	Market Comparable Method
+	•	Discounted Cash Flow (DCF)
+	•	Return a blended, weighted indicative valuation.
+	2.	Market Comparables Module
+	•	Pull or allow manual input of private company benchmarks and recent funding rounds in similar verticals.
+	•	Example: Display “Series A SaaS startups in Southeast Asia (2024–2025) median post-money valuation: $35M.”
+	•	Store and visualize these benchmarks for context in future use.
+	3.	Valuation History & Future Simulation
+	•	Enable users to input past valuations (e.g., Seed, Pre-Series A) with round details and date.
+	•	Generate a valuation trajectory chart showing historical data and simulated future valuation bands.
+	•	Allow users to adjust key variables (e.g., ARR growth, market sentiment, dilution scenarios) and visualize impact on future valuations.
+	4.	Interactive Visualization Layer
+	•	Use Chart.js or ECharts for sleek, animated charts:
+	•	Valuation vs Time line graph
+	•	Comparative scatter plot (user company vs. market comps)
+	•	Breakdown pie charts (methodology weightings)
+	•	Include intuitive color gradients, micro-animations, and premium-feel UX (inspired by Carta / AngelList).
+🎨 Design & UX Guidelines
+	•	Theme: Crisp, venture-grade design — minimal, dark mode default with accent gradients.
+	•	Layout:
+	•	Sidebar navigation (Inputs, Market Data, History, Visualizations, Reports)
+	•	Main dashboard with “Valuation Breakdown” card layout
+	•	Floating “What If?” simulation panel for scenario testing
+	•	Interactivity:
+	•	Real-time calculation updates on parameter change
+	•	Hover tooltips that explain valuation logic in plain language
+	•	Export and share feature (PDF + link) to send valuation summary to investors
