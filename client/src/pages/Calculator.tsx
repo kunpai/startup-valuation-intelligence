@@ -22,7 +22,8 @@ import {
   Loader2, 
   AlertTriangle,
   ExternalLink,
-  Plus
+  Plus,
+  Table as TableIcon
 } from "lucide-react";
 import {
   Dialog,
@@ -37,6 +38,7 @@ import { ScatterChart, Scatter, XAxis, YAxis, ZAxis, CartesianGrid, Tooltip as R
 import { Badge } from "@/components/ui/badge";
 import { Link, useLocation } from "wouter";
 import { toast } from "sonner";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 const METHODOLOGY_GUIDES = {
   overview: {
@@ -172,14 +174,18 @@ export default function ValuationEngine() {
     });
   };
 
+  // Sensitivity Matrix for VC Method
+  const sensitivityMultiples = [vcMultiple - 2, vcMultiple - 1, vcMultiple, vcMultiple + 1, vcMultiple + 2];
+  const sensitivityRois = [vcTargetRoi - 5, vcTargetRoi, vcTargetRoi + 5, vcTargetRoi + 10];
+
   return (
     <div className="space-y-6 h-[calc(100vh-8rem)] flex flex-col">
-      <div className="flex justify-between items-start">
+      <div className="flex justify-between items-start animate-in slide-in-from-top-4 duration-500">
           <div>
               <h1 className="text-3xl font-bold font-heading">Valuation Engine</h1>
               <p className="text-muted-foreground mt-2">Deep-dive valuation workspace with methodology-specific frameworks.</p>
           </div>
-          <Button onClick={handleSaveReport} className="gap-2">
+          <Button onClick={handleSaveReport} className="gap-2 shadow-lg shadow-primary/20 hover:shadow-primary/40 transition-shadow">
             <Plus className="size-4" /> Save as Report
           </Button>
       </div>
@@ -235,7 +241,7 @@ export default function ValuationEngine() {
             {/* Main Workspace Area (Scrollable) */}
             <div className="lg:col-span-2 overflow-y-auto pr-2 pb-20 space-y-6 h-full">
                 
-                <TabsContent value="overview" className="mt-0 space-y-6">
+                <TabsContent value="overview" className="mt-0 space-y-6 animate-in fade-in zoom-in-95 duration-300">
                     <Card className="bg-card/50 border-primary/10">
                         <CardHeader>
                             <CardTitle>Blended Valuation Summary</CardTitle>
@@ -243,25 +249,25 @@ export default function ValuationEngine() {
                         </CardHeader>
                         <CardContent className="space-y-8">
                              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                <div className="bg-secondary/30 p-4 rounded-lg border border-border/50 relative overflow-hidden">
+                                <div className="bg-secondary/30 p-4 rounded-lg border border-border/50 relative overflow-hidden group hover:bg-secondary/50 transition-colors">
                                     <div className="text-xs text-muted-foreground mb-1">VC Method</div>
                                     <div className="text-lg font-bold font-mono">${(vcPostMoney/1000000).toFixed(1)}M</div>
-                                    <div className="absolute bottom-0 left-0 h-1 bg-emerald-500" style={{ width: '75%' }} />
+                                    <div className="absolute bottom-0 left-0 h-1 bg-emerald-500 transition-all duration-500 group-hover:h-1.5" style={{ width: '75%' }} />
                                 </div>
-                                <div className="bg-secondary/30 p-4 rounded-lg border border-border/50 relative overflow-hidden">
+                                <div className="bg-secondary/30 p-4 rounded-lg border border-border/50 relative overflow-hidden group hover:bg-secondary/50 transition-colors">
                                     <div className="text-xs text-muted-foreground mb-1">Scorecard</div>
                                     <div className="text-lg font-bold font-mono">${(calculateScorecard()/1000000).toFixed(1)}M</div>
-                                    <div className="absolute bottom-0 left-0 h-1 bg-emerald-500" style={{ width: '85%' }} />
+                                    <div className="absolute bottom-0 left-0 h-1 bg-emerald-500 transition-all duration-500 group-hover:h-1.5" style={{ width: '85%' }} />
                                 </div>
-                                <div className="bg-secondary/30 p-4 rounded-lg border border-border/50 relative overflow-hidden">
+                                <div className="bg-secondary/30 p-4 rounded-lg border border-border/50 relative overflow-hidden group hover:bg-secondary/50 transition-colors">
                                     <div className="text-xs text-muted-foreground mb-1">Market Comps</div>
                                     <div className="text-lg font-bold font-mono">$12.5M</div>
-                                    <div className="absolute bottom-0 left-0 h-1 bg-emerald-500" style={{ width: '90%' }} />
+                                    <div className="absolute bottom-0 left-0 h-1 bg-emerald-500 transition-all duration-500 group-hover:h-1.5" style={{ width: '90%' }} />
                                 </div>
-                                <div className="bg-secondary/30 p-4 rounded-lg border border-border/50 relative overflow-hidden">
+                                <div className="bg-secondary/30 p-4 rounded-lg border border-border/50 relative overflow-hidden group hover:bg-secondary/50 transition-colors">
                                     <div className="text-xs text-muted-foreground mb-1">DCF Model</div>
                                     <div className="text-lg font-bold font-mono">$10.5M</div>
-                                    <div className="absolute bottom-0 left-0 h-1 bg-yellow-500" style={{ width: '40%' }} />
+                                    <div className="absolute bottom-0 left-0 h-1 bg-yellow-500 transition-all duration-500 group-hover:h-1.5" style={{ width: '40%' }} />
                                 </div>
                              </div>
 
@@ -287,7 +293,7 @@ export default function ValuationEngine() {
                     </Card>
                 </TabsContent>
 
-                <TabsContent value="vc-method" className="mt-0 space-y-6">
+                <TabsContent value="vc-method" className="mt-0 space-y-6 animate-in fade-in zoom-in-95 duration-300">
                     <Card className="bg-card/50 border-primary/10">
                         <CardHeader className="flex flex-row items-center justify-between">
                             <div>
@@ -354,6 +360,49 @@ export default function ValuationEngine() {
                             
                             <Separator className="bg-border/50" />
                             
+                            {/* Sensitivity Matrix */}
+                            <div className="space-y-4">
+                                <h3 className="text-sm font-medium flex items-center gap-2">
+                                    <TableIcon className="size-4 text-primary" /> Sensitivity Analysis: Valuation (in Millions)
+                                </h3>
+                                <div className="overflow-x-auto border border-border rounded-lg">
+                                    <Table>
+                                        <TableHeader className="bg-secondary/30">
+                                            <TableRow>
+                                                <TableHead className="text-xs text-center w-24">ROI \ Mult</TableHead>
+                                                {sensitivityMultiples.map(m => (
+                                                    <TableHead key={m} className={`text-xs text-center ${m === vcMultiple ? 'text-primary font-bold' : ''}`}>
+                                                        {m}x
+                                                    </TableHead>
+                                                ))}
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {sensitivityRois.map(roi => (
+                                                <TableRow key={roi}>
+                                                    <TableCell className={`text-xs font-medium text-center bg-secondary/10 ${roi === vcTargetRoi ? 'text-primary font-bold' : ''}`}>
+                                                        {roi}x
+                                                    </TableCell>
+                                                    {sensitivityMultiples.map(m => {
+                                                        const val = (vcExitRevenue * m) / roi / 1000000;
+                                                        const isSelected = roi === vcTargetRoi && m === vcMultiple;
+                                                        return (
+                                                            <TableCell 
+                                                                key={`${roi}-${m}`} 
+                                                                className={`text-xs text-center font-mono ${isSelected ? 'bg-primary/10 font-bold border-2 border-primary/20' : ''}`}
+                                                            >
+                                                                ${val.toFixed(1)}M
+                                                            </TableCell>
+                                                        );
+                                                    })}
+                                                </TableRow>
+                                            ))}
+                                        </TableBody>
+                                    </Table>
+                                </div>
+                                <p className="text-xs text-muted-foreground">Matrix shows Pre-Money Valuation based on different Exit Multiples (columns) and Target ROIs (rows).</p>
+                            </div>
+
                             {/* Logic Explained Card */}
                             <div className="bg-secondary/20 border border-border rounded-lg p-4">
                                 <div className="flex items-start gap-3">
@@ -375,7 +424,7 @@ export default function ValuationEngine() {
                     </Card>
                 </TabsContent>
 
-                <TabsContent value="scorecard" className="mt-0 space-y-6">
+                <TabsContent value="scorecard" className="mt-0 space-y-6 animate-in fade-in zoom-in-95 duration-300">
                     <Card className="bg-card/50 border-primary/10">
                         <CardHeader className="flex flex-row items-center justify-between">
                             <div>
@@ -442,7 +491,7 @@ export default function ValuationEngine() {
                     </Card>
                 </TabsContent>
                 
-                <TabsContent value="market-comps" className="mt-0 space-y-6">
+                <TabsContent value="market-comps" className="mt-0 space-y-6 animate-in fade-in zoom-in-95 duration-300">
                     <Card className="bg-card/50 border-primary/10">
                         <CardHeader className="flex flex-row items-center justify-between">
                             <div>
@@ -502,7 +551,7 @@ export default function ValuationEngine() {
                     </Card>
                 </TabsContent>
 
-                <TabsContent value="dcf" className="mt-0 space-y-6">
+                <TabsContent value="dcf" className="mt-0 space-y-6 animate-in fade-in zoom-in-95 duration-300">
                     <Card className="bg-card/50 border-primary/10">
                         <CardHeader>
                             <CardTitle>Discounted Cash Flow</CardTitle>
@@ -565,7 +614,7 @@ export default function ValuationEngine() {
 
             {/* Right Sidebar: Real-time Output */}
             <div className="hidden lg:block space-y-6">
-                <Card className="bg-primary text-primary-foreground border-none shadow-xl shadow-primary/10 sticky top-6">
+                <Card className="bg-primary text-primary-foreground border-none shadow-xl shadow-primary/10 sticky top-6 animate-in slide-in-from-right-8 duration-700">
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2">
                             <Calculator className="size-5" />
@@ -605,7 +654,7 @@ export default function ValuationEngine() {
                 </Card>
 
                 {/* Weight Controls */}
-                <Card className="bg-card/50 border-primary/10 sticky top-[340px]">
+                <Card className="bg-card/50 border-primary/10 sticky top-[340px] animate-in slide-in-from-right-8 duration-1000 delay-200">
                     <CardHeader>
                          <CardTitle className="text-sm">Method Weights</CardTitle>
                     </CardHeader>

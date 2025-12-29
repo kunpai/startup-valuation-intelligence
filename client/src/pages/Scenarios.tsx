@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Slider } from "@/components/ui/slider";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, ReferenceLine } from 'recharts';
 import { Plus, History, TrendingUp, AlertTriangle, Save, PlayCircle, RefreshCcw, Flag, CheckCircle2, Clock, Circle } from "lucide-react";
 import { useState } from "react";
 import simulationBg from '@assets/generated_images/futuristic_financial_simulation_control_panel_background.png';
@@ -28,7 +28,7 @@ export default function Scenarios() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 animate-in slide-in-from-top-4 duration-500">
         <div>
           <h1 className="text-3xl font-bold tracking-tight font-heading">History & Scenarios</h1>
           <p className="text-muted-foreground mt-1">Manage valuation history and model future outcomes.</p>
@@ -44,13 +44,13 @@ export default function Scenarios() {
       </div>
 
       <Tabs defaultValue="projection" className="space-y-4">
-        <TabsList className="bg-card/50 border border-primary/10">
+        <TabsList className="bg-card/50 border border-primary/10 animate-in fade-in duration-700">
           <TabsTrigger value="projection" className="gap-2"><TrendingUp className="size-4" /> Future Projections</TabsTrigger>
           <TabsTrigger value="milestones" className="gap-2"><Flag className="size-4" /> Milestones</TabsTrigger>
           <TabsTrigger value="history" className="gap-2"><History className="size-4" /> Round History</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="projection" className="space-y-4">
+        <TabsContent value="projection" className="space-y-4 animate-in fade-in zoom-in-95 duration-500">
             <div className="grid lg:grid-cols-3 gap-6">
                 {/* Controls */}
                 <Card className="bg-card/50 backdrop-blur-sm border-primary/10 lg:col-span-1 h-fit">
@@ -148,6 +148,11 @@ export default function Scenarios() {
                                             formatter={(value) => [`$${value}M`, "Valuation"]}
                                         />
                                         <Legend />
+                                        
+                                        {/* Milestone Annotations */}
+                                        <ReferenceLine x="2026" stroke="hsl(var(--emerald-500))" strokeDasharray="3 3" label={{ position: 'top', value: 'Series A', fill: 'hsl(var(--emerald-500))', fontSize: 12 }} />
+                                        <ReferenceLine x="2028" stroke="hsl(var(--blue-500))" strokeDasharray="3 3" label={{ position: 'top', value: 'Expansion', fill: 'hsl(var(--blue-500))', fontSize: 12 }} />
+                                        
                                         <Area type="monotone" dataKey="optimistic" stroke="hsl(var(--chart-2))" fillOpacity={1} fill="url(#colorOptimistic)" name="Aggressive" strokeWidth={3} />
                                         <Area type="monotone" dataKey="baseline" stroke="hsl(var(--primary))" fillOpacity={1} fill="url(#colorBaseline)" name="Baseline" strokeWidth={3} strokeDasharray="4 4" />
                                         <Area type="monotone" dataKey="conservative" stroke="hsl(var(--destructive))" fill="transparent" strokeDasharray="2 2" name="Conservative" strokeWidth={2} />
@@ -173,7 +178,7 @@ export default function Scenarios() {
             </div>
         </TabsContent>
 
-        <TabsContent value="milestones">
+        <TabsContent value="milestones" className="animate-in fade-in slide-in-from-right-8 duration-500">
             <div className="grid md:grid-cols-3 gap-6">
                 <div className="md:col-span-2 space-y-6">
                     <Card className="bg-card/50 backdrop-blur-sm border-primary/10">
@@ -187,7 +192,7 @@ export default function Scenarios() {
                                 {MOCK_MILESTONES.map((milestone, i) => (
                                     <div key={i} className="flex gap-6 items-start relative group">
                                         <div className={`
-                                            z-10 size-4 rounded-full border-2 mt-1.5 shrink-0 flex items-center justify-center
+                                            z-10 size-4 rounded-full border-2 mt-1.5 shrink-0 flex items-center justify-center transition-transform group-hover:scale-125 duration-300
                                             ${milestone.type === 'past' ? 'bg-primary border-primary' : 
                                               milestone.type === 'round' ? 'bg-emerald-500 border-emerald-500 ring-4 ring-emerald-500/20' : 
                                               'bg-background border-muted-foreground'}
@@ -198,7 +203,7 @@ export default function Scenarios() {
                                             flex-1 p-4 rounded-lg border transition-all duration-300
                                             ${milestone.type === 'future' ? 'bg-secondary/20 border-dashed border-border/60 hover:border-primary/30 hover:bg-secondary/40' : 
                                               milestone.type === 'round' ? 'bg-emerald-500/5 border-emerald-500/30' :
-                                              'bg-card/80 border-border hover:border-primary/20'}
+                                              'bg-card/80 border-border hover:border-primary/20 hover:translate-x-1'}
                                         `}>
                                             <div className="flex justify-between items-start mb-1">
                                                 <div className="flex items-center gap-2">
@@ -247,7 +252,7 @@ export default function Scenarios() {
                                     <span className="font-bold text-primary">65%</span>
                                 </div>
                                 <div className="h-2 bg-secondary rounded-full overflow-hidden">
-                                    <div className="h-full bg-primary w-[65%]" />
+                                    <div className="h-full bg-primary w-[65%] animate-pulse" />
                                 </div>
                             </div>
                             <Button variant="outline" className="w-full">Adjust Probabilities</Button>
@@ -277,7 +282,7 @@ export default function Scenarios() {
             </div>
         </TabsContent>
 
-        <TabsContent value="history">
+        <TabsContent value="history" className="animate-in fade-in slide-in-from-right-8 duration-500">
             <Card className="bg-card/50 backdrop-blur-sm border-primary/10">
                 <CardHeader>
                     <CardTitle>Historical Rounds</CardTitle>

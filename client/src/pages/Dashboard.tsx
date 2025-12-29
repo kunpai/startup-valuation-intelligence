@@ -27,7 +27,7 @@ export default function Dashboard() {
     <div className="space-y-6">
       <SimulationSheet />
       
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 animate-in slide-in-from-top-4 duration-500">
         <div>
           <h1 className="text-3xl font-bold tracking-tight font-heading">Valuation Dashboard</h1>
           <p className="text-muted-foreground mt-1">Real-time valuation intelligence for your startup.</p>
@@ -49,7 +49,7 @@ export default function Dashboard() {
       {/* Key Metrics Grid */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Link href="/calculator">
-          <Card className="bg-card/50 backdrop-blur-sm border-primary/10 shadow-sm hover:border-primary/20 transition-colors cursor-pointer h-full">
+          <Card className="bg-card/50 backdrop-blur-sm border-primary/10 shadow-sm hover:border-primary/20 transition-all cursor-pointer h-full animate-in zoom-in-95 duration-500 delay-100 hover:scale-[1.02]">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">Blended Valuation</CardTitle>
               <DollarSign className="h-4 w-4 text-primary" />
@@ -66,7 +66,7 @@ export default function Dashboard() {
           </Card>
         </Link>
 
-        <Card className="bg-card/50 backdrop-blur-sm border-primary/10 shadow-sm hover:border-primary/20 transition-colors">
+        <Card className="bg-card/50 backdrop-blur-sm border-primary/10 shadow-sm hover:border-primary/20 transition-all animate-in zoom-in-95 duration-500 delay-150">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">Confidence Score</CardTitle>
             <ShieldCheck className="h-4 w-4 text-emerald-500" />
@@ -74,12 +74,12 @@ export default function Dashboard() {
           <CardContent>
             <div className="text-2xl font-bold font-heading">82/100</div>
             <div className="w-full bg-secondary h-1.5 mt-2 rounded-full overflow-hidden">
-              <div className="bg-emerald-500 h-full rounded-full" style={{ width: "82%" }} />
+              <div className="bg-emerald-500 h-full rounded-full animate-[shimmer_2s_infinite]" style={{ width: "82%" }} />
             </div>
           </CardContent>
         </Card>
 
-        <Card className="bg-card/50 backdrop-blur-sm border-primary/10 shadow-sm hover:border-primary/20 transition-colors">
+        <Card className="bg-card/50 backdrop-blur-sm border-primary/10 shadow-sm hover:border-primary/20 transition-all animate-in zoom-in-95 duration-500 delay-200">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">Runway</CardTitle>
             <Activity className="h-4 w-4 text-orange-500" />
@@ -90,7 +90,7 @@ export default function Dashboard() {
           </CardContent>
         </Card>
 
-        <Card className="bg-card/50 backdrop-blur-sm border-primary/10 shadow-sm hover:border-primary/20 transition-colors">
+        <Card className="bg-card/50 backdrop-blur-sm border-primary/10 shadow-sm hover:border-primary/20 transition-all animate-in zoom-in-95 duration-500 delay-250">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">Market Sentiment</CardTitle>
             <Users className="h-4 w-4 text-blue-500" />
@@ -104,7 +104,7 @@ export default function Dashboard() {
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
         {/* Main Chart */}
-        <Card className="col-span-4 bg-card/50 backdrop-blur-sm border-primary/10">
+        <Card className="col-span-4 bg-card/50 backdrop-blur-sm border-primary/10 animate-in fade-in slide-in-from-left-8 duration-700 delay-300">
           <CardHeader>
             <CardTitle>Valuation Trajectory</CardTitle>
             <CardDescription>Historical valuation growth vs projected milestones</CardDescription>
@@ -146,6 +146,7 @@ export default function Dashboard() {
                     strokeWidth={2} 
                     fillOpacity={1} 
                     fill="url(#colorValuation)" 
+                    animationDuration={2000}
                   />
                 </AreaChart>
               </ResponsiveContainer>
@@ -154,7 +155,7 @@ export default function Dashboard() {
         </Card>
 
         {/* Methodology Breakdown - Pie Chart */}
-        <Card className="col-span-3 bg-card/50 backdrop-blur-sm border-primary/10">
+        <Card className="col-span-3 bg-card/50 backdrop-blur-sm border-primary/10 animate-in fade-in slide-in-from-right-8 duration-700 delay-300">
           <CardHeader>
             <CardTitle>Methodology Breakdown</CardTitle>
             <CardDescription>Weighted impact of different valuation models</CardDescription>
@@ -171,6 +172,7 @@ export default function Dashboard() {
                       outerRadius={80}
                       paddingAngle={5}
                       dataKey="value"
+                      animationDuration={1500}
                     >
                       {MOCK_METHODOLOGY_BREAKDOWN.map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={entry.fill} stroke="transparent" />
@@ -198,7 +200,7 @@ export default function Dashboard() {
         </Card>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 animate-in fade-in slide-in-from-bottom-8 duration-1000 delay-500">
         <Card className="bg-card/50 backdrop-blur-sm border-primary/10 col-span-2">
             <CardHeader>
                 <CardTitle>Recent Milestones</CardTitle>
@@ -207,7 +209,7 @@ export default function Dashboard() {
             <CardContent>
                 <div className="space-y-4">
                     {MOCK_MILESTONES.slice(0, 3).map((item, i) => (
-                        <div key={i} className="flex items-center justify-between p-3 rounded-lg bg-secondary/50 border border-border/50">
+                        <div key={i} className="flex items-center justify-between p-3 rounded-lg bg-secondary/50 border border-border/50 hover:bg-secondary/70 transition-colors">
                             <div className="flex flex-col">
                                 <span className="font-medium text-sm">{item.title}</span>
                                 <span className="text-xs text-muted-foreground">{item.date}</span>
