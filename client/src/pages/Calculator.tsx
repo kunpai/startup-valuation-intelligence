@@ -20,7 +20,9 @@ import {
   Upload, 
   FileSpreadsheet, 
   Loader2, 
-  AlertTriangle 
+  AlertTriangle,
+  ExternalLink,
+  Plus
 } from "lucide-react";
 import {
   Dialog,
@@ -33,6 +35,8 @@ import {
 import { Progress } from "@/components/ui/progress";
 import { ScatterChart, Scatter, XAxis, YAxis, ZAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Cell } from 'recharts';
 import { Badge } from "@/components/ui/badge";
+import { Link, useLocation } from "wouter";
+import { toast } from "sonner";
 
 const METHODOLOGY_GUIDES = {
   overview: {
@@ -84,6 +88,7 @@ const METHODOLOGY_GUIDES = {
 
 export default function ValuationEngine() {
   const [activeTab, setActiveTab] = useState("overview");
+  const [location, setLocation] = useLocation();
 
   // State for VC Method
   const [vcExitYear, setVcExitYear] = useState(5);
@@ -157,11 +162,26 @@ export default function ValuationEngine() {
     }, 2500);
   };
 
+  const handleSaveReport = () => {
+    toast.success("Report Saved", {
+        description: "Valuation report has been saved to your dashboard.",
+        action: {
+            label: "View",
+            onClick: () => setLocation("/reports")
+        }
+    });
+  };
+
   return (
     <div className="space-y-6 h-[calc(100vh-8rem)] flex flex-col">
-      <div>
-          <h1 className="text-3xl font-bold font-heading">Valuation Engine</h1>
-          <p className="text-muted-foreground mt-2">Deep-dive valuation workspace with methodology-specific frameworks.</p>
+      <div className="flex justify-between items-start">
+          <div>
+              <h1 className="text-3xl font-bold font-heading">Valuation Engine</h1>
+              <p className="text-muted-foreground mt-2">Deep-dive valuation workspace with methodology-specific frameworks.</p>
+          </div>
+          <Button onClick={handleSaveReport} className="gap-2">
+            <Plus className="size-4" /> Save as Report
+          </Button>
       </div>
 
       <Tabs defaultValue="overview" value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col space-y-6">
@@ -257,6 +277,11 @@ export default function ValuationEngine() {
                                     <br/><br/>
                                     Investors may view this as a "premium team in a developing market." Consider adjusting your exit revenue targets if you believe the market opportunity is larger.
                                 </div>
+                                <Link href="/scenarios">
+                                    <Button className="w-full mt-4 gap-2" variant="outline">
+                                        Model Future Scenarios <ArrowRight className="size-4" />
+                                    </Button>
+                                </Link>
                              </div>
                         </CardContent>
                     </Card>
@@ -427,42 +452,50 @@ export default function ValuationEngine() {
                             <div className="flex flex-col items-end">
                                 <span className="text-xs text-muted-foreground mb-1">Confidence Score</span>
                                 <Badge variant="outline" className="bg-emerald-500/10 text-emerald-500 border-emerald-500/20">
-                                    Excellent (90%)
+                                    Very High (90%)
                                 </Badge>
                             </div>
                         </CardHeader>
                         <CardContent className="space-y-6">
-                             <div className="bg-secondary/20 p-4 rounded-lg border border-border/50 mb-4">
-                                <div className="flex justify-between items-center mb-4">
-                                    <h4 className="text-sm font-medium">Valuation vs Revenue (Scatter)</h4>
-                                    <Badge variant="secondary" className="text-xs">Your Co: 88th Percentile</Badge>
+                             {/* Metric Input */}
+                             <div className="grid md:grid-cols-2 gap-8">
+                                <div className="space-y-4">
+                                    <Label>Your Annual Revenue (ARR)</Label>
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-muted-foreground">$</span>
+                                        <Input type="number" defaultValue={600000} />
+                                    </div>
                                 </div>
-                                <div className="h-[300px] w-full">
-                                    <ResponsiveContainer width="100%" height="100%">
-                                        <ScatterChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
-                                            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                                            <XAxis type="number" dataKey="revenue" name="Revenue" unit="$" stroke="hsl(var(--muted-foreground))" fontSize={12} tickFormatter={(value) => `${value/1000}k`} />
-                                            <YAxis type="number" dataKey="valuation" name="Valuation" unit="$" stroke="hsl(var(--muted-foreground))" fontSize={12} tickFormatter={(value) => `${value/1000000}M`} />
-                                            <RechartsTooltip cursor={{ strokeDasharray: '3 3' }} contentStyle={{ backgroundColor: 'hsl(var(--popover))', borderColor: 'hsl(var(--border))' }} />
-                                            <Scatter name="Market Comps" data={MOCK_COMPS} fill="hsl(var(--muted-foreground))" fillOpacity={0.6} />
-                                            <Scatter name="Your Company" data={[{ revenue: 600000, valuation: 12500000, growth: 120 }]} fill="hsl(var(--primary))" shape="star" />
-                                        </ScatterChart>
-                                    </ResponsiveContainer>
+                                <div className="space-y-4">
+                                    <Label>Implied Valuation @ 22x (Median)</Label>
+                                    <div className="text-3xl font-bold font-mono text-primary">$13,200,000</div>
                                 </div>
                              </div>
+
+                             <Separator className="bg-border/50" />
                              
-                             <div className="grid md:grid-cols-3 gap-4">
-                                <div className="bg-card border border-border p-4 rounded-lg">
-                                    <div className="text-xs text-muted-foreground">Median Multiple</div>
-                                    <div className="text-2xl font-bold font-mono mt-1">15.4x</div>
+                             <div className="space-y-4">
+                                <div className="flex items-center justify-between">
+                                    <Label>Comparable Companies (Peers)</Label>
+                                    <Link href="/comparables">
+                                        <Button size="sm" variant="outline" className="gap-2">
+                                            <ExternalLink className="size-3" /> Manage Peers
+                                        </Button>
+                                    </Link>
                                 </div>
-                                <div className="bg-card border border-border p-4 rounded-lg">
-                                    <div className="text-xs text-muted-foreground">Top Quartile</div>
-                                    <div className="text-2xl font-bold font-mono mt-1">22.1x</div>
-                                </div>
-                                <div className="bg-card border border-border p-4 rounded-lg">
-                                    <div className="text-xs text-muted-foreground">Your Implied Mult.</div>
-                                    <div className="text-2xl font-bold font-mono mt-1 text-emerald-500">20.8x</div>
+                                <div className="border border-border rounded-md overflow-hidden">
+                                    <div className="grid grid-cols-4 bg-secondary/50 p-2 text-xs font-medium text-muted-foreground border-b border-border">
+                                        <div className="col-span-2">Company</div>
+                                        <div className="text-right">Valuation</div>
+                                        <div className="text-right">Rev Multiple</div>
+                                    </div>
+                                    {MOCK_COMPS.slice(0, 5).map((comp, i) => (
+                                        <div key={i} className="grid grid-cols-4 p-3 text-sm border-b border-border/50 last:border-0 hover:bg-secondary/20">
+                                            <div className="col-span-2 font-medium">{comp.company}</div>
+                                            <div className="text-right font-mono">${(comp.valuation/1000000).toFixed(1)}M</div>
+                                            <div className="text-right font-mono text-muted-foreground">{(comp.valuation/comp.revenue).toFixed(1)}x</div>
+                                        </div>
+                                    ))}
                                 </div>
                              </div>
                         </CardContent>
@@ -471,171 +504,142 @@ export default function ValuationEngine() {
 
                 <TabsContent value="dcf" className="mt-0 space-y-6">
                     <Card className="bg-card/50 border-primary/10">
-                        <CardHeader className="flex flex-row items-center justify-between">
-                            <div>
-                                <CardTitle>Discounted Cash Flow (AI Analysis)</CardTitle>
-                                <CardDescription>Upload your financial model for AI-driven validation.</CardDescription>
-                            </div>
-                            <div className="flex flex-col items-end">
-                                <span className="text-xs text-muted-foreground mb-1">Confidence Score</span>
-                                <Badge variant="outline" className={dcfResult ? "bg-yellow-500/10 text-yellow-500 border-yellow-500/20" : "bg-muted text-muted-foreground"}>
-                                    {dcfResult ? "Low (45%)" : "Pending Data"}
-                                </Badge>
-                            </div>
+                        <CardHeader>
+                            <CardTitle>Discounted Cash Flow</CardTitle>
+                            <CardDescription>Upload your financial model for AI analysis.</CardDescription>
                         </CardHeader>
-                        <CardContent className="space-y-6">
-                            {!dcfResult && !analyzingDcf && (
-                                <div 
-                                    className="border-2 border-dashed border-primary/20 rounded-xl p-12 flex flex-col items-center justify-center text-center hover:bg-primary/5 transition-colors cursor-pointer group"
-                                    onClick={handleDcfUpload}
-                                >
-                                    <div className="bg-primary/10 p-4 rounded-full mb-4 group-hover:scale-110 transition-transform">
-                                        <Upload className="size-8 text-primary" />
-                                    </div>
-                                    <h3 className="text-lg font-medium mb-2">Upload Financial Model</h3>
-                                    <p className="text-sm text-muted-foreground max-w-sm">
-                                        Drag & drop your Excel (.xlsx) or CSV file here. 
-                                        Our AI will analyze your growth assumptions and discount rates.
-                                    </p>
-                                    <Button variant="secondary" className="mt-6">Select File</Button>
-                                </div>
-                            )}
-
-                            {analyzingDcf && (
-                                <div className="py-12 flex flex-col items-center justify-center text-center space-y-4">
-                                    <Loader2 className="size-10 text-primary animate-spin" />
-                                    <div>
-                                        <h3 className="text-lg font-medium">Analyzing Model Structure...</h3>
-                                        <p className="text-sm text-muted-foreground">Validating terminal value assumptions and growth vectors.</p>
-                                    </div>
-                                    <Progress value={66} className="w-[300px] h-2" />
-                                </div>
-                            )}
-
-                            {dcfResult && (
-                                <div className="space-y-6 animate-in fade-in zoom-in-95 duration-500">
-                                    <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-lg p-4 flex items-center justify-between">
-                                        <div className="flex items-center gap-3">
-                                            <FileSpreadsheet className="size-5 text-emerald-500" />
+                        <CardContent className="space-y-8">
+                             {!dcfResult ? (
+                                 <div className="border-2 border-dashed border-border rounded-xl p-12 flex flex-col items-center justify-center text-center space-y-4 hover:bg-secondary/10 transition-colors cursor-pointer" onClick={handleDcfUpload}>
+                                    {analyzingDcf ? (
+                                        <>
+                                            <Loader2 className="size-12 text-primary animate-spin" />
                                             <div>
-                                                <div className="text-sm font-medium">Financial_Model_v2.xlsx</div>
-                                                <div className="text-xs text-muted-foreground">Processed successfully</div>
+                                                <div className="font-medium">Analyzing Financial Model...</div>
+                                                <div className="text-sm text-muted-foreground">Checking growth assumptions and discount rates</div>
                                             </div>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <div className="bg-primary/10 p-4 rounded-full">
+                                                <Upload className="size-8 text-primary" />
+                                            </div>
+                                            <div>
+                                                <div className="font-medium">Upload Excel / CSV</div>
+                                                <div className="text-sm text-muted-foreground mt-1">Drag and drop your 5-year projection model</div>
+                                            </div>
+                                            <Button variant="secondary" size="sm">Browse Files</Button>
+                                        </>
+                                    )}
+                                 </div>
+                             ) : (
+                                 <div className="space-y-6">
+                                    <div className="flex items-center justify-between bg-emerald-500/10 border border-emerald-500/20 p-4 rounded-lg">
+                                        <div>
+                                            <div className="text-xs text-emerald-600 font-bold uppercase tracking-wide">Implied DCF Valuation</div>
+                                            <div className="text-3xl font-bold font-mono text-emerald-500">${(dcfResult.valuation/1000000).toFixed(1)}M</div>
                                         </div>
-                                        <Button variant="ghost" size="sm" onClick={() => setDcfResult(null)}>Remove</Button>
+                                        <div className="text-right">
+                                            <div className="text-xs text-muted-foreground">Confidence</div>
+                                            <div className="font-bold text-orange-500">{dcfResult.confidence}% (Low)</div>
+                                        </div>
                                     </div>
 
-                                    <div className="grid md:grid-cols-2 gap-6">
-                                        <div className="space-y-4">
-                                            <h4 className="text-sm font-medium flex items-center gap-2">
-                                                <Brain className="size-4 text-primary" /> AI Insights
-                                            </h4>
-                                            <div className="space-y-3">
-                                                {dcfResult.insights.map((insight, i) => (
-                                                    <div key={i} className="flex gap-3 text-sm bg-secondary/30 p-3 rounded border border-border/50">
-                                                        <AlertTriangle className="size-4 text-yellow-500 shrink-0 mt-0.5" />
-                                                        <span className="text-muted-foreground">{insight}</span>
-                                                    </div>
-                                                ))}
+                                    <div className="space-y-3">
+                                        <Label>AI Audit Findings</Label>
+                                        {dcfResult.insights.map((insight, i) => (
+                                            <div key={i} className="flex gap-3 items-start text-sm bg-secondary/30 p-3 rounded border border-border/50">
+                                                <AlertTriangle className="size-4 text-orange-500 mt-0.5 shrink-0" />
+                                                <span className="text-muted-foreground">{insight}</span>
                                             </div>
-                                        </div>
-                                        <div className="space-y-4">
-                                            <h4 className="text-sm font-medium">Valuation Output</h4>
-                                            <div className="bg-card border border-border p-6 rounded-lg text-center">
-                                                <div className="text-xs text-muted-foreground uppercase tracking-wider">Implied DCF Valuation</div>
-                                                <div className="text-3xl font-bold font-mono mt-2">${(dcfResult.valuation/1000000).toFixed(2)}M</div>
-                                                <div className="mt-4 flex items-center justify-center gap-2 text-xs text-yellow-500 bg-yellow-500/10 py-1 px-3 rounded-full w-fit mx-auto">
-                                                    <AlertTriangle className="size-3" />
-                                                    Low Confidence Score (45%)
-                                                </div>
-                                            </div>
-                                        </div>
+                                        ))}
                                     </div>
-                                </div>
-                            )}
+
+                                    <Button variant="outline" className="w-full" onClick={() => setDcfResult(null)}>Upload New Model</Button>
+                                 </div>
+                             )}
                         </CardContent>
                     </Card>
                 </TabsContent>
             </div>
 
-            {/* Sticky Results Sidebar (Right Column) */}
-            <div className="lg:col-span-1">
-                <div className="sticky top-6 space-y-4">
-                    <Card className="bg-primary text-primary-foreground border-none shadow-lg shadow-primary/25 overflow-hidden relative">
-                        {/* Background Decoration */}
-                        <div className="absolute top-0 right-0 p-8 opacity-10 pointer-events-none">
-                            <Calculator className="size-32 rotate-12" />
+            {/* Right Sidebar: Real-time Output */}
+            <div className="hidden lg:block space-y-6">
+                <Card className="bg-primary text-primary-foreground border-none shadow-xl shadow-primary/10 sticky top-6">
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                            <Calculator className="size-5" />
+                            Valuation Output
+                        </CardTitle>
+                        <CardDescription className="text-primary-foreground/70">
+                            Real-time weighted calculation.
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-6">
+                        <div>
+                            <div className="text-sm opacity-80 mb-1">Fair Market Value</div>
+                            <div className="text-4xl font-bold font-mono tracking-tight">$12,500,000</div>
                         </div>
 
-                        <CardHeader className="pb-2">
-                            <CardDescription className="text-primary-foreground/80">
-                                {activeTab === 'vc-method' ? 'VC Method Result' : 
-                                 activeTab === 'scorecard' ? 'Scorecard Result' : 
-                                 activeTab === 'dcf' && dcfResult ? 'DCF Result' :
-                                 'Blended Valuation'}
-                            </CardDescription>
-                            <CardTitle className="text-4xl font-heading font-bold">
-                                {activeTab === 'vc-method' ? `$${(vcPostMoney/1000000).toFixed(2)}M` : 
-                                 activeTab === 'scorecard' ? `$${(calculateScorecard()/1000000).toFixed(2)}M` : 
-                                 activeTab === 'dcf' && dcfResult ? `$${(dcfResult.valuation/1000000).toFixed(2)}M` :
-                                 '$12.5M'}
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-sm text-primary-foreground/80 mb-4 flex justify-between items-center">
-                                <span>Confidence</span>
-                                <span className="font-bold">{getConfidenceScore(activeTab)}%</span>
+                        <Separator className="bg-primary-foreground/20" />
+
+                        <div className="space-y-3">
+                            <div className="flex justify-between text-sm">
+                                <span className="opacity-80">Methodology</span>
+                                <span className="font-medium">Weighted Avg</span>
                             </div>
-                            <Progress value={getConfidenceScore(activeTab)} className="h-1.5 bg-primary-foreground/20 text-primary-foreground mb-4" />
-                            
-                            <Separator className="bg-primary-foreground/20 mb-4" />
-                            
-                            {activeTab === 'vc-method' && (
-                                <div className="space-y-2 text-sm">
-                                    <div className="flex justify-between">
-                                        <span>Implied Ownership</span>
-                                        <span className="font-mono font-medium">
-                                            {((1500000 / vcPostMoney) * 100).toFixed(1)}% for $1.5M
-                                        </span>
-                                    </div>
-                                    <div className="flex justify-between">
-                                        <span>Exit Value</span>
-                                        <span className="font-mono font-medium">${(vcExitRevenue * vcMultiple / 1000000).toFixed(0)}M</span>
-                                    </div>
-                                </div>
-                            )}
+                            <div className="flex justify-between text-sm">
+                                <span className="opacity-80">Confidence</span>
+                                <span className="font-medium">82% (High)</span>
+                            </div>
+                            <div className="flex justify-between text-sm">
+                                <span className="opacity-80">Last Updated</span>
+                                <span className="font-medium">Just now</span>
+                            </div>
+                        </div>
 
-                             {activeTab === 'scorecard' && (
-                                <div className="space-y-2 text-sm">
-                                    <div className="flex justify-between">
-                                        <span>Adjustment Factor</span>
-                                        <span className="font-mono font-medium">
-                                            {factors.reduce((acc, curr) => acc + (curr.weight * curr.score / 10000), 0).toFixed(2)}x
-                                        </span>
-                                    </div>
-                                    <div className="flex justify-between">
-                                        <span>Benchmark Base</span>
-                                        <span className="font-mono font-medium">${(scorecardBenchmark/1000000).toFixed(1)}M</span>
-                                    </div>
-                                </div>
-                            )}
-                        </CardContent>
-                    </Card>
+                        <Button variant="secondary" className="w-full font-bold text-primary hover:bg-white" onClick={handleSaveReport}>
+                            Finalize Valuation
+                        </Button>
+                    </CardContent>
+                </Card>
 
-                    <Card className="bg-card/50 border-primary/10">
-                        <CardHeader className="pb-3">
-                            <CardTitle className="text-sm">Quick Actions</CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-3">
-                            <Button variant="outline" className="w-full justify-start text-muted-foreground hover:text-foreground">
-                                <ArrowRight className="size-4 mr-2" /> Save to Scenario A
-                            </Button>
-                            <Button variant="outline" className="w-full justify-start text-muted-foreground hover:text-foreground">
-                                <ArrowRight className="size-4 mr-2" /> Compare with Market
-                            </Button>
-                        </CardContent>
-                    </Card>
-                </div>
+                {/* Weight Controls */}
+                <Card className="bg-card/50 border-primary/10 sticky top-[340px]">
+                    <CardHeader>
+                         <CardTitle className="text-sm">Method Weights</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        <div className="space-y-2">
+                            <div className="flex justify-between text-xs">
+                                <span>VC Method</span>
+                                <span>30%</span>
+                            </div>
+                            <Progress value={30} className="h-1.5" />
+                        </div>
+                        <div className="space-y-2">
+                            <div className="flex justify-between text-xs">
+                                <span>Scorecard</span>
+                                <span>30%</span>
+                            </div>
+                            <Progress value={30} className="h-1.5" />
+                        </div>
+                        <div className="space-y-2">
+                            <div className="flex justify-between text-xs">
+                                <span>Market Comps</span>
+                                <span>30%</span>
+                            </div>
+                            <Progress value={30} className="h-1.5" />
+                        </div>
+                        <div className="space-y-2">
+                            <div className="flex justify-between text-xs">
+                                <span>DCF</span>
+                                <span>10%</span>
+                            </div>
+                            <Progress value={10} className="h-1.5 bg-secondary" />
+                        </div>
+                    </CardContent>
+                </Card>
             </div>
         </div>
       </Tabs>

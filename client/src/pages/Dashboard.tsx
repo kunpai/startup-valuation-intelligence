@@ -20,6 +20,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { MOCK_METHODOLOGY_BREAKDOWN, MOCK_VALUATION_HISTORY, MOCK_MILESTONES } from "@/lib/constants";
 import { SimulationSheet } from "@/components/dashboard/SimulationSheet";
+import { Link } from "wouter";
 
 export default function Dashboard() {
   return (
@@ -32,32 +33,38 @@ export default function Dashboard() {
           <p className="text-muted-foreground mt-1">Real-time valuation intelligence for your startup.</p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" className="gap-2">
-            <ArrowUpRight className="size-4" /> Export Report
-          </Button>
-          <Button className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/20 gap-2">
-            <TrendingUp className="size-4" /> Update Metrics
-          </Button>
+          <Link href="/reports">
+            <Button variant="outline" className="gap-2">
+              <ArrowUpRight className="size-4" /> Export Report
+            </Button>
+          </Link>
+          <Link href="/calculator">
+            <Button className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/20 gap-2">
+              <TrendingUp className="size-4" /> Update Metrics
+            </Button>
+          </Link>
         </div>
       </div>
 
       {/* Key Metrics Grid */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card className="bg-card/50 backdrop-blur-sm border-primary/10 shadow-sm hover:border-primary/20 transition-colors">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Blended Valuation</CardTitle>
-            <DollarSign className="h-4 w-4 text-primary" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold font-heading">$12.5M</div>
-            <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
-              <span className="text-emerald-500 flex items-center">
-                +15% <ArrowUpRight className="size-3" />
-              </span>
-              vs last quarter
-            </p>
-          </CardContent>
-        </Card>
+        <Link href="/calculator">
+          <Card className="bg-card/50 backdrop-blur-sm border-primary/10 shadow-sm hover:border-primary/20 transition-colors cursor-pointer h-full">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">Blended Valuation</CardTitle>
+              <DollarSign className="h-4 w-4 text-primary" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold font-heading">$12.5M</div>
+              <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+                <span className="text-emerald-500 flex items-center">
+                  +15% <ArrowUpRight className="size-3" />
+                </span>
+                vs last quarter
+              </p>
+            </CardContent>
+          </Card>
+        </Link>
 
         <Card className="bg-card/50 backdrop-blur-sm border-primary/10 shadow-sm hover:border-primary/20 transition-colors">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -229,7 +236,9 @@ export default function Dashboard() {
                 <div className="text-sm text-muted-foreground leading-relaxed">
                     Increasing your <span className="text-foreground font-medium">LTV/CAC ratio</span> from 3.5 to 4.0 could add an estimated <span className="text-emerald-500 font-bold">$1.8M</span> to your pre-money valuation.
                 </div>
-                <Button variant="secondary" className="w-full mt-2">View Full Report</Button>
+                <Link href="/reports/0">
+                  <Button variant="secondary" className="w-full mt-2">View Full Report</Button>
+                </Link>
             </CardContent>
         </Card>
       </div>

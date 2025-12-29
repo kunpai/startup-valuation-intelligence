@@ -43,69 +43,77 @@ export default function Reports() {
           <h1 className="text-3xl font-bold tracking-tight font-heading">Reports & Docs</h1>
           <p className="text-muted-foreground mt-1">Generate and manage investor-ready documents.</p>
         </div>
-        <Button className="gap-2 shadow-lg shadow-primary/20">
-             <Plus className="size-4" /> Create New Report
-        </Button>
+        <Link href="/calculator">
+            <Button className="gap-2 shadow-lg shadow-primary/20">
+                <Plus className="size-4" /> Create New Report
+            </Button>
+        </Link>
       </div>
 
       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
         {/* Quick Actions */}
-        <Card className="bg-primary text-primary-foreground border-none shadow-xl shadow-primary/10 relative overflow-hidden group cursor-pointer hover:shadow-2xl transition-all duration-300">
-            <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                <FileText className="size-32 rotate-12" />
-            </div>
-            <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                    <FileText className="size-5" />
-                    One-Pager
-                </CardTitle>
-                <CardDescription className="text-primary-foreground/70">
-                    Standard startup profile for intro meetings.
-                </CardDescription>
-            </CardHeader>
-            <CardContent>
-                <p className="text-sm font-medium">Includes: Valuation Summary, Team, Market, & Key Metrics.</p>
-            </CardContent>
-            <CardFooter>
-                <Button variant="secondary" className="w-full">Generate Now</Button>
-            </CardFooter>
-        </Card>
+        <Link href="/calculator">
+            <Card className="bg-primary text-primary-foreground border-none shadow-xl shadow-primary/10 relative overflow-hidden group cursor-pointer hover:shadow-2xl transition-all duration-300 h-full">
+                <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                    <FileText className="size-32 rotate-12" />
+                </div>
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                        <FileText className="size-5" />
+                        One-Pager
+                    </CardTitle>
+                    <CardDescription className="text-primary-foreground/70">
+                        Standard startup profile for intro meetings.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <p className="text-sm font-medium">Includes: Valuation Summary, Team, Market, & Key Metrics.</p>
+                </CardContent>
+                <CardFooter>
+                    <Button variant="secondary" className="w-full">Generate Now</Button>
+                </CardFooter>
+            </Card>
+        </Link>
 
-        <Card className="bg-card/50 backdrop-blur-sm border-primary/10 hover:border-primary/30 transition-all cursor-pointer group">
-            <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                    <FileText className="size-5 text-emerald-500" />
-                    Full Valuation Audit
-                </CardTitle>
-                <CardDescription>
-                    Comprehensive 15-page breakdown of methodology.
-                </CardDescription>
-            </CardHeader>
-            <CardContent>
-                <p className="text-sm text-muted-foreground">Best for: Due Diligence Data Room, Lead Investor meetings.</p>
-            </CardContent>
-            <CardFooter>
-                <Button variant="outline" className="w-full group-hover:bg-secondary transition-colors">Generate Now</Button>
-            </CardFooter>
-        </Card>
+        <Link href="/calculator">
+            <Card className="bg-card/50 backdrop-blur-sm border-primary/10 hover:border-primary/30 transition-all cursor-pointer group h-full">
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                        <FileText className="size-5 text-emerald-500" />
+                        Full Valuation Audit
+                    </CardTitle>
+                    <CardDescription>
+                        Comprehensive 15-page breakdown of methodology.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <p className="text-sm text-muted-foreground">Best for: Due Diligence Data Room, Lead Investor meetings.</p>
+                </CardContent>
+                <CardFooter>
+                    <Button variant="outline" className="w-full group-hover:bg-secondary transition-colors">Generate Now</Button>
+                </CardFooter>
+            </Card>
+        </Link>
 
-        <Card className="bg-card/50 backdrop-blur-sm border-primary/10 hover:border-primary/30 transition-all cursor-pointer group">
-            <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                    <FileText className="size-5 text-blue-500" />
-                    Scenario Analysis
-                </CardTitle>
-                <CardDescription>
-                    Export current simulation scenarios as PDF.
-                </CardDescription>
-            </CardHeader>
-            <CardContent>
-                <p className="text-sm text-muted-foreground">Best for: Showing upside potential and risk mitigation.</p>
-            </CardContent>
-            <CardFooter>
-                <Button variant="outline" className="w-full group-hover:bg-secondary transition-colors">Generate Now</Button>
-            </CardFooter>
-        </Card>
+        <Link href="/scenarios">
+            <Card className="bg-card/50 backdrop-blur-sm border-primary/10 hover:border-primary/30 transition-all cursor-pointer group h-full">
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                        <FileText className="size-5 text-blue-500" />
+                        Scenario Analysis
+                    </CardTitle>
+                    <CardDescription>
+                        Export current simulation scenarios as PDF.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <p className="text-sm text-muted-foreground">Best for: Showing upside potential and risk mitigation.</p>
+                </CardContent>
+                <CardFooter>
+                    <Button variant="outline" className="w-full group-hover:bg-secondary transition-colors">Generate Now</Button>
+                </CardFooter>
+            </Card>
+        </Link>
       </div>
 
       <div className="mt-8">
