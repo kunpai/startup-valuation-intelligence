@@ -21,7 +21,7 @@ function Router() {
       <Route path="/onboarding" component={Onboarding} />
       
       {/* Protect other routes with Layout */}
-      <Route path="/:rest*">
+      <Route>
          <AppLayout>
             <Switch>
                 <Route path="/" component={Dashboard} />
