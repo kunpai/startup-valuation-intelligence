@@ -9,6 +9,7 @@ import Calculator from "@/pages/Calculator";
 import MarketComps from "@/pages/MarketComps";
 import Scenarios from "@/pages/Scenarios";
 import Reports from "@/pages/Reports";
+import ReportDetail from "@/pages/ReportDetail";
 
 function Router() {
   return (
@@ -19,6 +20,7 @@ function Router() {
         <Route path="/comparables" component={MarketComps} />
         <Route path="/scenarios" component={Scenarios} />
         <Route path="/reports" component={Reports} />
+        <Route path="/reports/:id" component={ReportDetail} />
         <Route component={NotFound} />
       </Switch>
     </AppLayout>

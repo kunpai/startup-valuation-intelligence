@@ -113,12 +113,12 @@ export default function Reports() {
             <div className="divide-y divide-border/50">
                 {REPORTS.map((report, i) => (
                     <div key={i} className="flex items-center justify-between p-4 hover:bg-secondary/30 transition-colors">
-                        <div className="flex items-center gap-4">
+                        <Link href={`/reports/${i}`} className="flex-1 flex items-center gap-4 cursor-pointer">
                             <div className="bg-secondary/50 p-3 rounded-lg">
                                 <FileText className="size-6 text-muted-foreground" />
                             </div>
                             <div>
-                                <h3 className="font-medium">{report.title}</h3>
+                                <h3 className="font-medium hover:text-primary transition-colors">{report.title}</h3>
                                 <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
                                     <span>{report.type}</span>
                                     <span>•</span>
@@ -127,7 +127,7 @@ export default function Reports() {
                                     <span>{report.size}</span>
                                 </div>
                             </div>
-                        </div>
+                        </Link>
                         <div className="flex items-center gap-3">
                             <Badge variant={report.status === "Draft" ? "outline" : "secondary"} className={report.status === "Sent" ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20" : ""}>
                                 {report.status}
