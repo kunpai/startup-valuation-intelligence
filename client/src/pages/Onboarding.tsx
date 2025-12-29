@@ -65,7 +65,7 @@ export default function Onboarding() {
     setLocation("/");
   };
 
-  const handleComplete = () => {
+  const handleComplete = async () => {
     // Save all data to context
     updateProfile({
       name: formData.name,
@@ -92,7 +92,7 @@ export default function Onboarding() {
     updateHistory(formData.history);
     setMethodology(formData.methodology);
     
-    completeOnboarding();
+    await completeOnboarding();
     localStorage.setItem('start-tour', 'true');
     setLocation("/");
   };

@@ -119,7 +119,7 @@ export default function ValuationEngine() {
   const [activeTab, setActiveTab] = useState("overview");
   const [location, setLocation] = useLocation();
 
-  const { companyProfile } = useValuation(); // Get company profile for adaptive weighting
+  const { companyProfile, setCalculatedValuation, saveValuation, isDemoMode } = useValuation(); // Get company profile for adaptive weighting
 
   // --- NEW: Smart Weighting State ---
   const [smartWeighting, setSmartWeighting] = useState(true);
@@ -279,14 +279,29 @@ export default function ValuationEngine() {
     }, 2500);
   };
 
-  const handleSaveReport = () => {
-    toast.success("Report Saved", {
+  const handleSaveReport = async () => {
+    if (isDemoMode) {
+      toast.info("Demo Mode", {
+        description: "Complete onboarding to save valuations permanently."
+      });
+      return;
+    }
+
+    try {
+      setCalculatedValuation(blendedValuation);
+      await saveValuation(`Valuation - ${new Date().toLocaleDateString()}`);
+      toast.success("Report Saved", {
         description: "Valuation report has been saved to your dashboard.",
         action: {
-            label: "View",
-            onClick: () => setLocation("/reports")
+          label: "View",
+          onClick: () => setLocation("/reports")
         }
-    });
+      });
+    } catch (error) {
+      toast.error("Failed to Save", {
+        description: "Unable to save valuation. Please try again."
+      });
+    }
   };
 
   // Sensitivity Matrix for VC Method
@@ -304,7 +319,7 @@ export default function ValuationEngine() {
               <h1 className="text-3xl font-bold font-heading">Valuation Engine</h1>
               <p className="text-muted-foreground mt-2">Deep-dive valuation workspace with methodology-specific frameworks.</p>
           </div>
-          <Button onClick={handleSaveReport} className="gap-2 shadow-lg shadow-primary/20 hover:shadow-primary/40 transition-shadow">
+          <Button onClick={handleSaveReport} className="gap-2 shadow-lg shadow-primary/20 hover:shadow-primary/40 transition-shadow" data-testid="button-save-valuation">
             <Plus className="size-4" /> Save as Report
           </Button>
       </div>
