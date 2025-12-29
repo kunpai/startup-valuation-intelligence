@@ -202,18 +202,7 @@ export async function registerRoutes(
   
   // ==================== Comparables ====================
   
-  // Get all comparables
-  app.get("/api/comparables", async (req, res) => {
-    try {
-      const comparables = await storage.getAllComparables();
-      res.json(comparables);
-    } catch (error) {
-      console.error("Error fetching comparables:", error);
-      res.status(500).json({ error: "Failed to fetch comparables" });
-    }
-  });
-  
-  // Get comparables for a company
+  // Get comparables for a company (company-scoped)
   app.get("/api/companies/:companyId/comparables", async (req, res) => {
     try {
       const comparables = await storage.getComparablesByCompany(req.params.companyId);
@@ -241,46 +230,6 @@ export async function registerRoutes(
   
   // Delete comparable for a company (company-scoped)
   app.delete("/api/companies/:companyId/comparables/:id", async (req, res) => {
-    try {
-      const success = await storage.deleteComparable(req.params.id);
-      if (!success) {
-        return res.status(404).json({ error: "Comparable not found" });
-      }
-      res.status(204).send();
-    } catch (error) {
-      console.error("Error deleting comparable:", error);
-      res.status(500).json({ error: "Failed to delete comparable" });
-    }
-  });
-  
-  // Create comparable (legacy global endpoint)
-  app.post("/api/comparables", async (req, res) => {
-    try {
-      const validatedData = insertComparableSchema.parse(req.body);
-      const comparable = await storage.createComparable(validatedData);
-      res.status(201).json(comparable);
-    } catch (error) {
-      console.error("Error creating comparable:", error);
-      res.status(400).json({ error: "Invalid comparable data" });
-    }
-  });
-  
-  // Update comparable
-  app.patch("/api/comparables/:id", async (req, res) => {
-    try {
-      const comparable = await storage.updateComparable(req.params.id, req.body);
-      if (!comparable) {
-        return res.status(404).json({ error: "Comparable not found" });
-      }
-      res.json(comparable);
-    } catch (error) {
-      console.error("Error updating comparable:", error);
-      res.status(500).json({ error: "Failed to update comparable" });
-    }
-  });
-  
-  // Delete comparable
-  app.delete("/api/comparables/:id", async (req, res) => {
     try {
       const success = await storage.deleteComparable(req.params.id);
       if (!success) {
