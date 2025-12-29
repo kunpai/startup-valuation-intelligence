@@ -1,10 +1,12 @@
 import { useState, useEffect, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
-import { ChevronRight, ChevronLeft, X, Check } from "lucide-react";
+import { ChevronRight, ChevronLeft, X, Check, Sparkles } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useLocation } from "wouter";
+import dashboardHero from '@assets/generated_images/abstract_valuation_dashboard_concept.png';
+import miraHero from '@assets/generated_images/friendly_ai_assistant_robot.png';
 
 interface TourGuideProps {
   run: boolean;
@@ -17,6 +19,7 @@ interface Step {
   content: React.ReactNode;
   placement?: 'top' | 'bottom' | 'left' | 'right' | 'center';
   route?: string; // New: Optional route to navigate to
+  image?: string;
 }
 
 export function TourGuide({ run, setRun }: TourGuideProps) {
@@ -30,13 +33,19 @@ export function TourGuide({ run, setRun }: TourGuideProps) {
       target: 'body',
       title: "Welcome to Valuation Intelligence",
       content: (
-        <div className="space-y-2">
+        <div className="space-y-3">
           <p>This platform creates defensible startup valuations by blending quantitative data with qualitative scoring.</p>
-          <p className="text-xs text-muted-foreground mt-2">Let's walk through how we build your number, step-by-step.</p>
+          <div className="bg-primary/5 p-2 rounded-md border border-primary/10">
+            <p className="text-xs text-muted-foreground flex gap-2">
+                <Sparkles className="size-3 text-primary shrink-0 mt-0.5" />
+                <span><strong>New:</strong> Meet Mira, your AI Valuation Advisor, available 24/7.</span>
+            </p>
+          </div>
         </div>
       ),
       placement: 'center',
-      route: '/'
+      route: '/',
+      image: dashboardHero
     },
     {
       target: '[data-tour="dashboard-nav"]',
@@ -51,6 +60,20 @@ export function TourGuide({ run, setRun }: TourGuideProps) {
       content: "We don't rely on just one method. We combine VC methodology, Market Comps, Scorecards, and DCF analysis. This chart shows how much each method contributes to your final number.",
       placement: 'left',
       route: '/'
+    },
+    // --- Phase 1.5: Mira Introduction ---
+    {
+        target: '[data-tour="mira-toggle"]', 
+        title: "Meet Mira, Your AI CFO",
+        content: (
+            <div className="space-y-2">
+                <p>Need advice? Click here to chat with Mira. She understands your specific financial data and can suggest how to improve your valuation.</p>
+                <p className="text-xs text-muted-foreground">Try asking: "How do I increase my pre-money valuation?"</p>
+            </div>
+        ),
+        placement: 'top',
+        route: '/',
+        image: miraHero
     },
     
     // --- Phase 2: Calculator Deep Dive ---
@@ -150,7 +173,17 @@ export function TourGuide({ run, setRun }: TourGuideProps) {
 
       // Try finding element with retries
       const findElement = () => {
-          const element = document.querySelector(step.target);
+          // Special handling for Mira button which might be dynamically rendered
+          let selector = step.target;
+          // If targeting Mira and using generic selector, try to find the specific button
+          if (step.title?.includes("Mira")) {
+               // We need a better way to target Mira, let's assume she's the floating button at bottom right
+               // We'll rely on the generic selector or specific data attribute if added later
+               // For now, let's try to target the last button in the body that is fixed positioned if possible
+               // Or just use the selector defined in steps
+          }
+
+          const element = document.querySelector(selector);
           if (element) {
             const rect = element.getBoundingClientRect();
             setTargetRect(rect);
@@ -219,8 +252,8 @@ export function TourGuide({ run, setRun }: TourGuideProps) {
             left = targetRect.left;
             break;
         case 'top':
-            top = targetRect.top - 200 - gap;
-            left = targetRect.left;
+            top = targetRect.top - (currentStepData.image ? 400 : 200) - gap; // Adjust for image height
+            left = targetRect.left - 200; // Shift left a bit for better alignment usually
             break;
         default:
              top = targetRect.bottom + gap;
@@ -231,6 +264,13 @@ export function TourGuide({ run, setRun }: TourGuideProps) {
     if (top < 20) top = 20;
     if (left < 20) left = 20;
     if (left + 320 > window.innerWidth) left = window.innerWidth - 340;
+    // Bottom boundary check
+    if (top + 400 > window.innerHeight) {
+        // If it goes off bottom, flip to top if placement wasn't forced
+        if (currentStepData.placement !== 'top') {
+             top = targetRect.top - (currentStepData.image ? 350 : 200) - gap;
+        }
+    }
 
     return {
         top,
@@ -282,8 +322,18 @@ export function TourGuide({ run, setRun }: TourGuideProps) {
             key={currentStep}
             transition={{ duration: 0.2 }}
         >
-            <Card className="w-[320px] shadow-2xl border-primary/20 bg-card/95 backdrop-blur">
-            <CardHeader className="pb-2">
+            <Card className="w-[340px] shadow-2xl border-primary/20 bg-card/95 backdrop-blur overflow-hidden">
+            {currentStepData.image && (
+                <div className="h-32 w-full overflow-hidden relative border-b border-primary/10">
+                    <img 
+                        src={currentStepData.image} 
+                        alt={currentStepData.title} 
+                        className="w-full h-full object-cover"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-background/90 to-transparent" />
+                </div>
+            )}
+            <CardHeader className={cn("pb-2", currentStepData.image ? "pt-4" : "")}>
                 <div className="flex items-center justify-between">
                     <h4 className="font-bold text-lg text-primary">{currentStepData.title}</h4>
                     <Button variant="ghost" size="icon" className="h-6 w-6" onClick={handleSkip}>

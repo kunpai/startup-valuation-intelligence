@@ -127,7 +127,10 @@ export function VirtualCFO() {
     <>
         {/* Floating Toggle Button */}
         {!isOpen && (
-            <div className="fixed bottom-6 right-6 z-50 animate-in zoom-in duration-300">
+            <div 
+                className="fixed bottom-6 right-6 z-50 animate-in zoom-in duration-300" 
+                data-tour="mira-toggle" // Added for tour targeting
+            >
                 <Button 
                     onClick={() => setIsOpen(true)} 
                     size="icon" 

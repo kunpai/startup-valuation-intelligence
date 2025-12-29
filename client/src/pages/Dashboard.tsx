@@ -75,7 +75,7 @@ export default function Dashboard() {
                     Welcome, {companyProfile.name} 
                     <Badge variant="secondary" className="text-xs">Series A Track</Badge>
                   </h3>
-                  <p className="text-sm text-muted-foreground">We've initialized your valuation model based on your inputs.</p>
+                  <p className="text-sm text-muted-foreground">We've initialized your valuation model based on your inputs. Mira, your AI CFO, is ready to help.</p>
               </div>
               <Button variant="outline" size="sm" onClick={() => setLocation("/onboarding")}>Edit Profile</Button>
           </div>
