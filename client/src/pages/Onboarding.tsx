@@ -190,7 +190,7 @@ export default function Onboarding() {
                     />
                 </div>
                 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-2">
                         <Label>Founded Year</Label>
                         <Select value={formData.foundedYear.toString()} onValueChange={(v) => setFormData({...formData, foundedYear: parseInt(v)})}>
@@ -213,7 +213,7 @@ export default function Onboarding() {
                     </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-2">
                         <Label>Sector</Label>
                         <Select value={formData.sector} onValueChange={(v) => setFormData({...formData, sector: v})}>
@@ -261,8 +261,8 @@ export default function Onboarding() {
                 {formData.hasHistory && (
                     <div className="space-y-4 animate-in fade-in slide-in-from-top-2">
                         {formData.history.map((item, idx) => (
-                            <div key={idx} className="grid grid-cols-12 gap-2 items-end p-3 border rounded-lg bg-card relative group">
-                                <div className="col-span-3 space-y-1">
+                            <div key={idx} className="flex flex-col sm:grid sm:grid-cols-12 gap-2 sm:items-end p-3 border rounded-lg bg-card relative group">
+                                <div className="sm:col-span-3 space-y-1">
                                     <Label className="text-xs">Round</Label>
                                     <Select value={item.round} onValueChange={(v) => updateHistoryItem(idx, 'round', v)}>
                                         <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
@@ -271,15 +271,15 @@ export default function Onboarding() {
                                         </SelectContent>
                                     </Select>
                                 </div>
-                                <div className="col-span-4 space-y-1">
+                                <div className="sm:col-span-4 space-y-1">
                                     <Label className="text-xs">Date</Label>
                                     <Input type="date" className="h-8 text-xs" value={item.date} onChange={(e) => updateHistoryItem(idx, 'date', e.target.value)} />
                                 </div>
-                                <div className="col-span-4 space-y-1">
+                                <div className="sm:col-span-4 space-y-1">
                                     <Label className="text-xs">Post-Money Val</Label>
                                     <Input type="number" className="h-8 text-xs" placeholder="$" value={item.valuation || ""} onChange={(e) => updateHistoryItem(idx, 'valuation', Number(e.target.value))} />
                                 </div>
-                                <div className="col-span-1 pb-1">
+                                <div className="sm:col-span-1 pb-1 flex justify-end sm:justify-center">
                                     <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive hover:bg-destructive/10" onClick={() => removeHistoryItem(idx)}>
                                         <Trash2 className="size-3" />
                                     </Button>
@@ -392,7 +392,7 @@ export default function Onboarding() {
         icon: <TrendingUp className="size-6 text-emerald-500" />,
         content: (
             <div className="space-y-6">
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-2">
                         <Label>Annual Revenue (ARR)</Label>
                         <div className="relative">

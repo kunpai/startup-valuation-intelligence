@@ -57,7 +57,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             </div>
           </header>
           
-          <div className="relative z-10 flex-1 p-6 md:p-8 max-w-7xl mx-auto w-full animate-in fade-in duration-500">
+          <div className="relative z-10 flex-1 p-4 sm:p-6 md:p-8 max-w-7xl mx-auto w-full animate-in fade-in duration-500">
             {children}
           </div>
         </main>

@@ -35,19 +35,19 @@ export default function DealRoom() {
     <div className="max-w-5xl mx-auto space-y-8 pb-12 print:p-0 print:m-0 print:max-w-none">
       
       {/* Print/Export Controls - Hidden in Print Mode */}
-      <div className="flex justify-between items-center print:hidden animate-in fade-in slide-in-from-top-4">
+      <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 print:hidden animate-in fade-in slide-in-from-top-4">
         <div>
             <Link href="/reports">
-                <Button variant="ghost" className="mb-2 pl-0 hover:bg-transparent hover:text-primary">← Back to Reports</Button>
+                <Button variant="ghost" className="mb-2 pl-0 hover:bg-transparent hover:text-primary text-sm">← Back to Reports</Button>
             </Link>
-            <h1 className="text-3xl font-bold font-heading">Investor Deal Room</h1>
-            <p className="text-muted-foreground">Generated on {new Date().toLocaleDateString()}</p>
+            <h1 className="text-2xl md:text-3xl font-bold font-heading">Investor Deal Room</h1>
+            <p className="text-sm md:text-base text-muted-foreground">Generated on {new Date().toLocaleDateString()}</p>
         </div>
-        <div className="flex gap-2" data-tour="deal-room-export">
-            <Button variant="outline" className="gap-2" onClick={handlePrint}>
+        <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto" data-tour="deal-room-export">
+            <Button variant="outline" className="gap-2 w-full sm:w-auto" onClick={handlePrint}>
                 <Printer className="size-4" /> Print / PDF
             </Button>
-            <Button className="gap-2 shadow-lg shadow-primary/20">
+            <Button className="gap-2 shadow-lg shadow-primary/20 w-full sm:w-auto">
                 <Share2 className="size-4" /> Share Link
             </Button>
         </div>

@@ -147,11 +147,13 @@ export default function Scenarios() {
       </div>
 
       <Tabs defaultValue="projection" className="space-y-4">
-        <TabsList className="bg-card/50 border border-primary/10 animate-in fade-in duration-700">
-          <TabsTrigger value="projection" className="gap-2"><TrendingUp className="size-4" /> Future Projections</TabsTrigger>
-          <TabsTrigger value="milestones" className="gap-2"><Flag className="size-4" /> Milestones</TabsTrigger>
-          <TabsTrigger value="history" className="gap-2"><History className="size-4" /> Round History</TabsTrigger>
-        </TabsList>
+        <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
+          <TabsList className="bg-card/50 border border-primary/10 animate-in fade-in duration-700 inline-flex w-max sm:w-auto">
+            <TabsTrigger value="projection" className="gap-1.5 px-2 sm:px-4 text-xs sm:text-sm"><TrendingUp className="size-3.5 sm:size-4" /> Projections</TabsTrigger>
+            <TabsTrigger value="milestones" className="gap-1.5 px-2 sm:px-4 text-xs sm:text-sm"><Flag className="size-3.5 sm:size-4" /> Milestones</TabsTrigger>
+            <TabsTrigger value="history" className="gap-1.5 px-2 sm:px-4 text-xs sm:text-sm"><History className="size-3.5 sm:size-4" /> History</TabsTrigger>
+          </TabsList>
+        </div>
 
         <TabsContent value="projection" className="space-y-4 animate-in fade-in zoom-in-95 duration-500">
             <div className="grid lg:grid-cols-3 gap-6">

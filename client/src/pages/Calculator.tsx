@@ -501,15 +501,15 @@ export default function ValuationEngine() {
                                 </div>
                              </div>
                              
-                             <div className="flex justify-end gap-3">
-                                <Link href="/reports/deal-room">
-                                    <Button className="gap-2 bg-primary/10 text-primary hover:bg-primary/20 border-primary/20 shadow-none" variant="outline">
-                                        <FileText className="size-4" /> View Deal Room Report
+                             <div className="flex flex-col sm:flex-row justify-end gap-3">
+                                <Link href="/reports/deal-room" className="w-full sm:w-auto">
+                                    <Button className="gap-2 bg-primary/10 text-primary hover:bg-primary/20 border-primary/20 shadow-none w-full sm:w-auto" variant="outline">
+                                        <FileText className="size-4" /> View Deal Room
                                     </Button>
                                 </Link>
-                                <Link href="/scenarios">
-                                    <Button className="gap-2" variant="outline">
-                                        Model Future Scenarios <ArrowRight className="size-4" />
+                                <Link href="/scenarios" className="w-full sm:w-auto">
+                                    <Button className="gap-2 w-full sm:w-auto" variant="outline">
+                                        Model Scenarios <ArrowRight className="size-4" />
                                     </Button>
                                 </Link>
                              </div>
@@ -656,12 +656,12 @@ export default function ValuationEngine() {
                         />
                     ) : (
                     <Card className="bg-card/50 border-primary/10">
-                        <CardHeader className="flex flex-row items-center justify-between">
+                        <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                             <div>
                                 <CardTitle>Scorecard Factors</CardTitle>
                                 <CardDescription>Adjust qualitative factors relative to average startups in your sector.</CardDescription>
                             </div>
-                            <Button variant="secondary" onClick={() => setShowQuestionnaire(true)} className="gap-2">
+                            <Button variant="secondary" onClick={() => setShowQuestionnaire(true)} className="gap-2 w-full sm:w-auto">
                                 <ListChecks className="size-4" /> Launch Questionnaire
                             </Button>
                         </CardHeader>

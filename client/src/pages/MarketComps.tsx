@@ -403,15 +403,18 @@ export default function MarketComps() {
             </Card>
 
             <Tabs defaultValue="recommended" className="w-full">
-                <div className="flex items-center justify-between mb-4">
-                    <TabsList className="bg-card/50 border border-primary/10">
-                        <TabsTrigger value="recommended">Recommended Matches ({filteredComps.length})</TabsTrigger>
-                        <TabsTrigger value="selected">My Selection ({savedComps.length})</TabsTrigger>
-                    </TabsList>
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+                    <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
+                      <TabsList className="bg-card/50 border border-primary/10 inline-flex w-max sm:w-auto">
+                          <TabsTrigger value="recommended" className="text-xs sm:text-sm px-2 sm:px-4">Matches ({filteredComps.length})</TabsTrigger>
+                          <TabsTrigger value="selected" className="text-xs sm:text-sm px-2 sm:px-4">Selected ({savedComps.length})</TabsTrigger>
+                      </TabsList>
+                    </div>
                 </div>
 
                 <TabsContent value="recommended" className="mt-0">
                     <Card className="bg-card/50 backdrop-blur-sm border-primary/10 overflow-hidden">
+                      <div className="overflow-x-auto">
                         <Table>
                             <TableHeader className="bg-secondary/50">
                                 <TableRow>
@@ -464,11 +467,13 @@ export default function MarketComps() {
                                 )}
                             </TableBody>
                         </Table>
+                      </div>
                     </Card>
                 </TabsContent>
 
                 <TabsContent value="selected" className="mt-0">
                     <Card className="bg-card/50 backdrop-blur-sm border-primary/10 overflow-hidden">
+                      <div className="overflow-x-auto">
                         <Table>
                             <TableHeader className="bg-secondary/50">
                                 <TableRow>
@@ -524,6 +529,7 @@ export default function MarketComps() {
                                 )}
                             </TableBody>
                         </Table>
+                      </div>
                     </Card>
                 </TabsContent>
             </Tabs>
