@@ -8,6 +8,7 @@ import { Send, Bot, User, Sparkles, TrendingUp, AlertTriangle, X, MessageSquare,
 import { useState, useRef, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { useLocation } from "wouter";
+import miraAvatar from "@assets/mira-avatar.png";
 
 interface Message {
   id: string;
@@ -138,7 +139,7 @@ export function VirtualCFO() {
                 >
                     <div className="absolute inset-0 bg-gradient-to-tr from-indigo-500/20 to-purple-500/20 animate-pulse" />
                     <Avatar className="h-10 w-10 border-2 border-white/20">
-                        <AvatarImage src="https://api.dicebear.com/7.x/avataaars/svg?seed=Mira&backgroundColor=b6e3f4" />
+                        <AvatarImage src={miraAvatar} className="object-cover" />
                         <AvatarFallback>M</AvatarFallback>
                     </Avatar>
                     <span className="absolute top-0 right-0 flex h-3 w-3">
@@ -163,7 +164,7 @@ export function VirtualCFO() {
                         <div className="flex items-center gap-3">
                             <div className="relative">
                                 <Avatar className="h-9 w-9 border border-primary/20 shadow-sm">
-                                    <AvatarImage src="https://api.dicebear.com/7.x/avataaars/svg?seed=Mira&backgroundColor=b6e3f4" />
+                                    <AvatarImage src={miraAvatar} className="object-cover" />
                                     <AvatarFallback>M</AvatarFallback>
                                 </Avatar>
                                 <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full bg-emerald-500 border-2 border-background"></span>
@@ -201,7 +202,7 @@ export function VirtualCFO() {
                         >
                             {msg.role === 'assistant' && (
                                 <Avatar className="size-6 border shrink-0 mt-1">
-                                    <AvatarImage src="https://api.dicebear.com/7.x/avataaars/svg?seed=Mira&backgroundColor=b6e3f4" />
+                                    <AvatarImage src={miraAvatar} className="object-cover" />
                                     <AvatarFallback>M</AvatarFallback>
                                 </Avatar>
                             )}
@@ -238,7 +239,7 @@ export function VirtualCFO() {
                         {isTyping && (
                             <div className="flex gap-3">
                                 <Avatar className="size-6 border shrink-0 mt-1">
-                                    <AvatarImage src="https://api.dicebear.com/7.x/avataaars/svg?seed=Mira&backgroundColor=b6e3f4" />
+                                    <AvatarImage src={miraAvatar} className="object-cover" />
                                     <AvatarFallback>M</AvatarFallback>
                                 </Avatar>
                                 <div className="bg-secondary/50 border border-border/50 rounded-2xl rounded-tl-sm px-4 py-3 flex items-center gap-1">
