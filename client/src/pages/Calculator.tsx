@@ -113,6 +113,8 @@ const CHECKLIST_ITEMS = [
     { id: 'incubation', label: 'Accelerator / Incubator', value: 250000, description: "Accepted into reputable program" }
 ];
 
+import { ScorecardQuestionnaire } from "@/components/calculator/ScorecardQuestionnaire";
+
 export default function ValuationEngine() {
   const [activeTab, setActiveTab] = useState("overview");
   const [location, setLocation] = useLocation();
@@ -121,6 +123,7 @@ export default function ValuationEngine() {
 
   // --- NEW: Smart Weighting State ---
   const [smartWeighting, setSmartWeighting] = useState(true);
+  const [showQuestionnaire, setShowQuestionnaire] = useState(false);
 
   // --- NEW: Checklist State ---
   const [checklistItems, setChecklistItems] = useState<string[]>(['team', 'market']); // Default some checked
@@ -199,6 +202,20 @@ export default function ValuationEngine() {
     setChecklistItems(prev => 
         prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
     );
+  };
+
+  const handleQuestionnaireComplete = (newScores: Record<string, number>) => {
+    const newFactors = factors.map(f => {
+      if (newScores[f.name]) {
+        return { ...f, score: newScores[f.name] };
+      }
+      return f;
+    });
+    setFactors(newFactors);
+    setShowQuestionnaire(false);
+    toast.success("Scorecard Updated", {
+        description: "Valuation factors adjusted based on your answers."
+    });
   };
 
   // --- Smart Weighting Logic ---
@@ -615,18 +632,21 @@ export default function ValuationEngine() {
                 </TabsContent>
 
                 <TabsContent value="scorecard" className="mt-0 space-y-6 animate-in fade-in zoom-in-95 duration-300">
+                    {showQuestionnaire ? (
+                        <ScorecardQuestionnaire 
+                            onComplete={handleQuestionnaireComplete} 
+                            onCancel={() => setShowQuestionnaire(false)} 
+                        />
+                    ) : (
                     <Card className="bg-card/50 border-primary/10">
                         <CardHeader className="flex flex-row items-center justify-between">
                             <div>
-                                <CardTitle>Scorecard Method</CardTitle>
-                                <CardDescription>Adjust base valuation with qualitative factors.</CardDescription>
+                                <CardTitle>Scorecard Factors</CardTitle>
+                                <CardDescription>Adjust qualitative factors relative to average startups in your sector.</CardDescription>
                             </div>
-                            <div className="flex flex-col items-end">
-                                <span className="text-xs text-muted-foreground mb-1">Confidence Score</span>
-                                <Badge variant="outline" className="bg-emerald-500/10 text-emerald-500 border-emerald-500/20">
-                                    Very High (85%)
-                                </Badge>
-                            </div>
+                            <Button variant="secondary" onClick={() => setShowQuestionnaire(true)} className="gap-2">
+                                <ListChecks className="size-4" /> Launch Questionnaire
+                            </Button>
                         </CardHeader>
                         <CardContent className="space-y-6">
                             <div className="space-y-4 mb-8">
@@ -666,6 +686,7 @@ export default function ValuationEngine() {
                             </div>
                         </CardContent>
                     </Card>
+                    )}
                 </TabsContent>
 
                 <TabsContent value="market-comps" className="mt-0 space-y-6 animate-in fade-in zoom-in-95 duration-300">
