@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TourGuide } from "./TourGuide";
 import { Button } from "@/components/ui/button";
 import { PlayCircle } from "lucide-react";
+import { VirtualCFO } from "@/components/dashboard/VirtualCFO";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [runTour, setRunTour] = React.useState(false);
@@ -59,6 +60,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           </div>
         </main>
       </div>
+      <VirtualCFO />
       <Toaster />
     </SidebarProvider>
   );

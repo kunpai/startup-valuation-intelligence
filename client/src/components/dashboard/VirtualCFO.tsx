@@ -4,8 +4,9 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
-import { Send, Bot, User, Sparkles, TrendingUp, AlertTriangle, Lightbulb } from "lucide-react";
+import { Send, Bot, User, Sparkles, TrendingUp, AlertTriangle, X, MessageSquare, Maximize2, Minimize2 } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
+import { cn } from "@/lib/utils";
 
 interface Message {
   id: string;
@@ -19,14 +20,14 @@ const INITIAL_MESSAGES: Message[] = [
   {
     id: '1',
     role: 'assistant',
-    content: "Hi there! I'm your Valuation Analyst AI. I've reviewed your financial inputs and market data. Ask me anything about your valuation or how to improve it.",
+    content: "Hi, I'm Mira, your Valuation AI Advisor. I'm analyzing your real-time metrics. How can I help maximize your valuation today?",
     timestamp: new Date(Date.now() - 1000 * 60 * 5),
     type: 'text'
   },
   {
     id: '2',
     role: 'assistant',
-    content: "Based on your current metrics, your **Team Score (125%)** is driving a significant premium, but your **LTV/CAC (3.5x)** is slightly below the Series A top-quartile benchmark of 4.5x.",
+    content: "Quick insight: Your **Team Score (125%)** is exceptional, but your **LTV/CAC (3.5x)** is slightly below the Series A target of 4.5x.",
     timestamp: new Date(Date.now() - 1000 * 60 * 5),
     type: 'insight'
   }
@@ -36,13 +37,14 @@ export function VirtualCFO() {
   const [messages, setMessages] = useState<Message[]>(INITIAL_MESSAGES);
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [messages]);
+  }, [messages, isOpen]);
 
   const handleSend = () => {
     if (!input.trim()) return;
@@ -88,99 +90,152 @@ export function VirtualCFO() {
   };
 
   return (
-    <Card className="h-[600px] flex flex-col border-primary/20 shadow-2xl bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/60">
-      <CardHeader className="border-b border-border/50 py-3">
-        <CardTitle className="text-sm font-medium flex items-center gap-2">
-          <Bot className="size-4 text-primary" />
-          Virtual CFO
-          <Badge variant="secondary" className="ml-auto text-[10px] bg-primary/10 text-primary hover:bg-primary/20">
-            <Sparkles className="size-3 mr-1" />
-            AI Active
-          </Badge>
-        </CardTitle>
-        <CardDescription className="text-xs">
-            Expert guidance on your valuation strategy.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="flex-1 p-0 overflow-hidden relative">
-        <ScrollArea className="h-full p-4" ref={scrollRef}>
-          <div className="space-y-4">
-            {messages.map((msg) => (
-              <div
-                key={msg.id}
-                className={`flex gap-3 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}
-              >
-                <Avatar className="size-8 border">
-                  {msg.role === 'assistant' ? (
-                    <AvatarFallback className="bg-primary/10 text-primary"><Bot className="size-4" /></AvatarFallback>
-                  ) : (
-                    <AvatarFallback className="bg-secondary text-secondary-foreground"><User className="size-4" /></AvatarFallback>
-                  )}
-                </Avatar>
-                <div className={`flex flex-col max-w-[80%] ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
-                  <div 
-                    className={`
-                        rounded-2xl px-4 py-2.5 text-sm shadow-sm
-                        ${msg.role === 'user' 
-                            ? 'bg-primary text-primary-foreground rounded-tr-sm' 
-                            : 'bg-secondary/50 border border-border/50 rounded-tl-sm'
-                        }
-                    `}
-                  >
-                    {msg.type === 'insight' && (
-                        <div className="flex items-center gap-2 mb-2 text-emerald-500 font-bold text-xs uppercase tracking-wider">
-                            <TrendingUp className="size-3" /> Valuation Insight
-                        </div>
-                    )}
-                    {msg.type === 'alert' && (
-                        <div className="flex items-center gap-2 mb-2 text-orange-500 font-bold text-xs uppercase tracking-wider">
-                            <AlertTriangle className="size-3" /> Risk Alert
-                        </div>
-                    )}
-                    <div className="whitespace-pre-line leading-relaxed">
-                        {msg.content}
-                    </div>
-                  </div>
-                  <span className="text-[10px] text-muted-foreground mt-1 px-1">
-                    {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                  </span>
-                </div>
-              </div>
-            ))}
-            {isTyping && (
-                <div className="flex gap-3">
-                    <Avatar className="size-8 border">
-                        <AvatarFallback className="bg-primary/10 text-primary"><Bot className="size-4" /></AvatarFallback>
+    <>
+        {/* Floating Toggle Button */}
+        {!isOpen && (
+            <div className="fixed bottom-6 right-6 z-50 animate-in zoom-in duration-300">
+                <Button 
+                    onClick={() => setIsOpen(true)} 
+                    size="icon" 
+                    className="h-14 w-14 rounded-full shadow-xl bg-primary hover:bg-primary/90 text-primary-foreground relative overflow-hidden group"
+                >
+                    <div className="absolute inset-0 bg-gradient-to-tr from-indigo-500/20 to-purple-500/20 animate-pulse" />
+                    <Avatar className="h-10 w-10 border-2 border-white/20">
+                        <AvatarImage src="https://api.dicebear.com/7.x/avataaars/svg?seed=Mira&backgroundColor=b6e3f4" />
+                        <AvatarFallback>M</AvatarFallback>
                     </Avatar>
-                    <div className="bg-secondary/50 border border-border/50 rounded-2xl rounded-tl-sm px-4 py-3 flex items-center gap-1">
-                        <div className="size-1.5 bg-primary/40 rounded-full animate-bounce [animation-delay:-0.3s]" />
-                        <div className="size-1.5 bg-primary/40 rounded-full animate-bounce [animation-delay:-0.15s]" />
-                        <div className="size-1.5 bg-primary/40 rounded-full animate-bounce" />
-                    </div>
+                    <span className="absolute top-0 right-0 flex h-3 w-3">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+                    </span>
+                </Button>
+                <div className="absolute -top-12 right-0 bg-popover text-popover-foreground px-3 py-1.5 rounded-lg text-xs font-medium shadow-lg border border-border/50 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                    Ask Mira anything
                 </div>
-            )}
-          </div>
-        </ScrollArea>
-      </CardContent>
-      <div className="p-3 border-t border-border/50 bg-secondary/10">
-        <form 
-            onSubmit={(e) => {
-                e.preventDefault();
-                handleSend();
-            }}
-            className="flex gap-2"
-        >
-            <Input 
-                placeholder="Ask about your valuation..." 
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                className="bg-background shadow-none border-primary/20 focus-visible:ring-primary/20"
-            />
-            <Button type="submit" size="icon" disabled={!input.trim() || isTyping}>
-                <Send className="size-4" />
-            </Button>
-        </form>
-      </div>
-    </Card>
+            </div>
+        )}
+
+        {/* Chat Interface */}
+        <div className={cn(
+            "fixed bottom-6 right-6 z-50 w-[380px] transition-all duration-300 origin-bottom-right",
+            isOpen ? "scale-100 opacity-100 translate-y-0" : "scale-95 opacity-0 translate-y-10 pointer-events-none"
+        )}>
+            <Card className="flex flex-col border-primary/20 shadow-2xl bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/60 h-[600px] overflow-hidden">
+                <CardHeader className="border-b border-border/50 py-3 bg-primary/5">
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                            <div className="relative">
+                                <Avatar className="h-9 w-9 border border-primary/20 shadow-sm">
+                                    <AvatarImage src="https://api.dicebear.com/7.x/avataaars/svg?seed=Mira&backgroundColor=b6e3f4" />
+                                    <AvatarFallback>M</AvatarFallback>
+                                </Avatar>
+                                <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full bg-emerald-500 border-2 border-background"></span>
+                            </div>
+                            <div>
+                                <CardTitle className="text-sm font-bold flex items-center gap-2">
+                                    Mira
+                                    <Badge variant="secondary" className="px-1.5 py-0 text-[10px] h-4 bg-primary/10 text-primary">
+                                        AI Advisor
+                                    </Badge>
+                                </CardTitle>
+                                <CardDescription className="text-[10px]">
+                                    Online • Analyzing 24 metrics
+                                </CardDescription>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-1">
+                            <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground" onClick={() => {}}>
+                                <Maximize2 className="size-3" />
+                            </Button>
+                            <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:bg-destructive/10 hover:text-destructive" onClick={() => setIsOpen(false)}>
+                                <X className="size-4" />
+                            </Button>
+                        </div>
+                    </div>
+                </CardHeader>
+                
+                <CardContent className="flex-1 p-0 overflow-hidden relative">
+                    <ScrollArea className="h-full p-4" ref={scrollRef}>
+                    <div className="space-y-4">
+                        {messages.map((msg) => (
+                        <div
+                            key={msg.id}
+                            className={`flex gap-3 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}
+                        >
+                            {msg.role === 'assistant' && (
+                                <Avatar className="size-6 border shrink-0 mt-1">
+                                    <AvatarImage src="https://api.dicebear.com/7.x/avataaars/svg?seed=Mira&backgroundColor=b6e3f4" />
+                                    <AvatarFallback>M</AvatarFallback>
+                                </Avatar>
+                            )}
+                            <div className={`flex flex-col max-w-[85%] ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
+                            <div 
+                                className={`
+                                    rounded-2xl px-4 py-2.5 text-sm shadow-sm
+                                    ${msg.role === 'user' 
+                                        ? 'bg-primary text-primary-foreground rounded-tr-sm' 
+                                        : 'bg-secondary/80 border border-border/50 rounded-tl-sm'
+                                    }
+                                `}
+                            >
+                                {msg.type === 'insight' && (
+                                    <div className="flex items-center gap-2 mb-2 text-emerald-600 dark:text-emerald-400 font-bold text-xs uppercase tracking-wider">
+                                        <TrendingUp className="size-3" /> Valuation Insight
+                                    </div>
+                                )}
+                                {msg.type === 'alert' && (
+                                    <div className="flex items-center gap-2 mb-2 text-orange-600 dark:text-orange-400 font-bold text-xs uppercase tracking-wider">
+                                        <AlertTriangle className="size-3" /> Risk Alert
+                                    </div>
+                                )}
+                                <div className="whitespace-pre-line leading-relaxed">
+                                    {msg.content}
+                                </div>
+                            </div>
+                            <span className="text-[10px] text-muted-foreground mt-1 px-1">
+                                {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                            </div>
+                        </div>
+                        ))}
+                        {isTyping && (
+                            <div className="flex gap-3">
+                                <Avatar className="size-6 border shrink-0 mt-1">
+                                    <AvatarImage src="https://api.dicebear.com/7.x/avataaars/svg?seed=Mira&backgroundColor=b6e3f4" />
+                                    <AvatarFallback>M</AvatarFallback>
+                                </Avatar>
+                                <div className="bg-secondary/50 border border-border/50 rounded-2xl rounded-tl-sm px-4 py-3 flex items-center gap-1">
+                                    <div className="size-1.5 bg-primary/40 rounded-full animate-bounce [animation-delay:-0.3s]" />
+                                    <div className="size-1.5 bg-primary/40 rounded-full animate-bounce [animation-delay:-0.15s]" />
+                                    <div className="size-1.5 bg-primary/40 rounded-full animate-bounce" />
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                    </ScrollArea>
+                </CardContent>
+                
+                <div className="p-3 border-t border-border/50 bg-secondary/10">
+                    <form 
+                        onSubmit={(e) => {
+                            e.preventDefault();
+                            handleSend();
+                        }}
+                        className="flex gap-2"
+                    >
+                        <Input 
+                            placeholder="Ask Mira..." 
+                            value={input}
+                            onChange={(e) => setInput(e.target.value)}
+                            className="bg-background shadow-none border-primary/20 focus-visible:ring-primary/20"
+                        />
+                        <Button type="submit" size="icon" disabled={!input.trim() || isTyping}>
+                            <Send className="size-4" />
+                        </Button>
+                    </form>
+                </div>
+            </Card>
+        </div>
+    </>
   );
 }
