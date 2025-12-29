@@ -73,29 +73,30 @@ export default function Dashboard() {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6">
       {/* Welcome Banner for User Mode */}
       {!isDemoMode && (
-          <div className="bg-primary/10 border border-primary/20 rounded-lg p-4 flex items-center justify-between animate-in fade-in slide-in-from-top-4">
+          <div className="bg-primary/10 border border-primary/20 rounded-lg p-3 md:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-in fade-in slide-in-from-top-4">
               <div>
-                  <h3 className="font-bold text-primary flex items-center gap-2">
+                  <h3 className="font-bold text-primary flex flex-wrap items-center gap-2 text-sm md:text-base">
                     Welcome, {companyProfile.name} 
                     <Badge variant="secondary" className="text-xs">Series A Track</Badge>
                   </h3>
-                  <p className="text-sm text-muted-foreground">We've initialized your valuation model based on your inputs. Mira, your AI CFO, is ready to help.</p>
+                  <p className="text-xs md:text-sm text-muted-foreground">We've initialized your valuation model based on your inputs.</p>
               </div>
-              <Button variant="outline" size="sm" onClick={() => setLocation("/onboarding")}>Edit Profile</Button>
+              <Button variant="outline" size="sm" onClick={() => setLocation("/onboarding")} className="w-full sm:w-auto">Edit Profile</Button>
           </div>
       )}
 
       {isDemoMode && (
-         <div className="bg-secondary/30 border border-secondary rounded-lg p-3 flex items-center justify-between">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+         <div className="bg-secondary/30 border border-secondary rounded-lg p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-2 text-xs md:text-sm text-muted-foreground">
                 <Badge variant="outline">Demo Mode</Badge>
-                Viewing sample data for "Acme AI".
+                <span className="hidden sm:inline">Viewing sample data for "Acme AI".</span>
+                <span className="sm:hidden">Sample data</span>
             </div>
             <Link href="/onboarding">
-                <Button size="sm">Start Your Valuation</Button>
+                <Button size="sm" className="w-full sm:w-auto">Start Your Valuation</Button>
             </Link>
          </div>
       )}
@@ -104,17 +105,17 @@ export default function Dashboard() {
       
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 animate-in slide-in-from-top-4 duration-500">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight font-heading">Valuation Dashboard</h1>
-          <p className="text-muted-foreground mt-1">Real-time valuation intelligence for your startup.</p>
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight font-heading">Valuation Dashboard</h1>
+          <p className="text-sm md:text-base text-muted-foreground mt-1">Real-time valuation intelligence for your startup.</p>
         </div>
-        <div className="flex items-center gap-2" data-tour="quick-actions">
-          <Link href="/reports">
-            <Button variant="outline" className="gap-2">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto" data-tour="quick-actions">
+          <Link href="/reports" className="w-full sm:w-auto">
+            <Button variant="outline" className="gap-2 w-full sm:w-auto">
               <ArrowUpRight className="size-4" /> Export Report
             </Button>
           </Link>
-          <Link href="/calculator">
-            <Button className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/20 gap-2">
+          <Link href="/calculator" className="w-full sm:w-auto">
+            <Button className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/20 gap-2 w-full sm:w-auto">
               <TrendingUp className="size-4" /> Update Metrics
             </Button>
           </Link>

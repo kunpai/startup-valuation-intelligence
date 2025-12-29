@@ -37,14 +37,14 @@ export default function Reports() {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight font-heading">Reports & Docs</h1>
-          <p className="text-muted-foreground mt-1">Generate and manage investor-ready documents.</p>
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight font-heading">Reports & Docs</h1>
+          <p className="text-sm md:text-base text-muted-foreground mt-1">Generate and manage investor-ready documents.</p>
         </div>
-        <Link href="/calculator">
-            <Button className="gap-2 shadow-lg shadow-primary/20">
+        <Link href="/calculator" className="w-full md:w-auto">
+            <Button className="gap-2 shadow-lg shadow-primary/20 w-full md:w-auto">
                 <Plus className="size-4" /> Create New Report
             </Button>
         </Link>

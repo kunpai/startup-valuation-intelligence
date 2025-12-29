@@ -172,13 +172,13 @@ export function VirtualCFO() {
         {/* Floating Toggle Button */}
         {!isOpen && (
             <div 
-                className="fixed bottom-6 right-6 z-50 animate-in zoom-in duration-300" 
-                data-tour="mira-toggle" // Added for tour targeting
+                className="fixed bottom-4 right-4 md:bottom-6 md:right-6 z-50 animate-in zoom-in duration-300" 
+                data-tour="mira-toggle"
             >
                 <Button 
                     onClick={() => setIsOpen(true)} 
                     size="icon" 
-                    className="h-14 w-14 rounded-full shadow-xl bg-primary hover:bg-primary/90 text-primary-foreground relative overflow-hidden group"
+                    className="h-12 w-12 md:h-14 md:w-14 rounded-full shadow-xl bg-primary hover:bg-primary/90 text-primary-foreground relative overflow-hidden group"
                 >
                     <div className="absolute inset-0 bg-gradient-to-tr from-indigo-500/20 to-purple-500/20 animate-pulse" />
                     <Avatar className="h-10 w-10 border-2 border-white/20">
@@ -198,10 +198,10 @@ export function VirtualCFO() {
 
         {/* Chat Interface */}
         <div className={cn(
-            "fixed bottom-6 right-6 z-50 w-[380px] transition-all duration-300 origin-bottom-right",
+            "fixed bottom-0 left-0 right-0 md:bottom-6 md:right-6 md:left-auto z-50 w-full md:w-[380px] transition-all duration-300 origin-bottom md:origin-bottom-right",
             isOpen ? "scale-100 opacity-100 translate-y-0" : "scale-95 opacity-0 translate-y-10 pointer-events-none"
         )}>
-            <Card className="flex flex-col border-primary/20 shadow-2xl bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/60 h-[600px] overflow-hidden">
+            <Card className="flex flex-col border-primary/20 shadow-2xl bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/60 h-[85vh] md:h-[600px] rounded-t-2xl md:rounded-2xl overflow-hidden">
                 <CardHeader className="border-b border-border/50 py-3 bg-primary/5">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">

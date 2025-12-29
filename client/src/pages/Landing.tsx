@@ -9,35 +9,35 @@ export default function Landing() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background via-background to-primary/5">
-      <div className="container mx-auto px-4 py-8">
-        <nav className="flex justify-between items-center mb-16">
+      <div className="container mx-auto px-4 py-6 md:py-8">
+        <nav className="flex justify-between items-center mb-10 md:mb-16">
           <div className="flex items-center gap-2">
-            <div className="bg-primary/10 p-2 rounded-lg">
-              <Sparkles className="h-6 w-6 text-primary" />
+            <div className="bg-primary/10 p-1.5 md:p-2 rounded-lg">
+              <Sparkles className="h-5 w-5 md:h-6 md:w-6 text-primary" />
             </div>
-            <span className="text-xl font-bold font-heading">Valuation Intelligence</span>
+            <span className="text-lg md:text-xl font-bold font-heading">Valuation Intelligence</span>
           </div>
-          <Button onClick={handleLogin} className="gap-2" data-testid="button-login">
+          <Button onClick={handleLogin} className="gap-2" size="sm" data-testid="button-login">
             Sign In <ArrowRight className="h-4 w-4" />
           </Button>
         </nav>
 
-        <div className="text-center max-w-3xl mx-auto mb-20">
-          <h1 className="text-5xl md:text-6xl font-bold font-heading mb-6 bg-clip-text text-transparent bg-gradient-to-r from-primary via-purple-400 to-primary">
+        <div className="text-center max-w-3xl mx-auto mb-12 md:mb-20 px-2">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold font-heading mb-4 md:mb-6 bg-clip-text text-transparent bg-gradient-to-r from-primary via-purple-400 to-primary leading-tight">
             Build Defensible Startup Valuations
           </h1>
-          <p className="text-xl text-muted-foreground mb-8 leading-relaxed">
+          <p className="text-base md:text-xl text-muted-foreground mb-6 md:mb-8 leading-relaxed">
             Combine VC methodologies, market comparables, and your unique growth story 
             to create investor-ready valuations in minutes.
           </p>
           <div className="flex gap-4 justify-center">
-            <Button size="lg" onClick={handleLogin} className="gap-2 text-lg h-12 px-8 shadow-xl shadow-primary/20 hover:shadow-primary/40" data-testid="button-get-started">
-              Get Started <ArrowRight className="h-5 w-5" />
+            <Button size="lg" onClick={handleLogin} className="gap-2 text-base md:text-lg h-11 md:h-12 px-6 md:px-8 shadow-xl shadow-primary/20 hover:shadow-primary/40" data-testid="button-get-started">
+              Get Started <ArrowRight className="h-4 w-4 md:h-5 md:w-5" />
             </Button>
           </div>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto mb-20">
+        <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-4 md:gap-6 max-w-5xl mx-auto mb-12 md:mb-20">
           {[
             { 
               icon: Scale, 
@@ -67,7 +67,7 @@ export default function Landing() {
           ))}
         </div>
 
-        <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto mb-20">
+        <div className="grid sm:grid-cols-2 gap-4 md:gap-8 max-w-4xl mx-auto mb-12 md:mb-20">
           <Card className="bg-card/50 backdrop-blur-sm border-primary/10">
             <CardContent className="pt-6">
               <Users className="h-8 w-8 text-primary mb-4" />

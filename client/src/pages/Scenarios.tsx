@@ -108,11 +108,11 @@ export default function Scenarios() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 animate-in slide-in-from-top-4 duration-500">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight font-heading">History & Scenarios</h1>
-          <p className="text-muted-foreground mt-1">Manage valuation history and model future outcomes.</p>
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight font-heading">History & Scenarios</h1>
+          <p className="text-sm md:text-base text-muted-foreground mt-1">Manage valuation history and model future outcomes.</p>
         </div>
         <div className="flex gap-2">
            <Dialog open={saveDialogOpen} onOpenChange={setSaveDialogOpen}>

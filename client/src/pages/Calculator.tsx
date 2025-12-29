@@ -313,43 +313,45 @@ export default function ValuationEngine() {
   const dcfGrowths = [dcfTerminalGrowth - 1, dcfTerminalGrowth, dcfTerminalGrowth + 1];
 
   return (
-    <div className="space-y-6 h-[calc(100vh-8rem)] flex flex-col">
-      <div className="flex justify-between items-start animate-in slide-in-from-top-4 duration-500">
+    <div className="space-y-4 md:space-y-6 min-h-[calc(100vh-8rem)] flex flex-col">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4 animate-in slide-in-from-top-4 duration-500">
           <div>
-              <h1 className="text-3xl font-bold font-heading">Valuation Engine</h1>
-              <p className="text-muted-foreground mt-2">Deep-dive valuation workspace with methodology-specific frameworks.</p>
+              <h1 className="text-2xl md:text-3xl font-bold font-heading">Valuation Engine</h1>
+              <p className="text-sm md:text-base text-muted-foreground mt-1 md:mt-2">Deep-dive valuation workspace with methodology-specific frameworks.</p>
           </div>
-          <Button onClick={handleSaveReport} className="gap-2 shadow-lg shadow-primary/20 hover:shadow-primary/40 transition-shadow" data-testid="button-save-valuation">
+          <Button onClick={handleSaveReport} className="gap-2 shadow-lg shadow-primary/20 hover:shadow-primary/40 transition-shadow w-full sm:w-auto" data-testid="button-save-valuation">
             <Plus className="size-4" /> Save as Report
           </Button>
       </div>
 
-      <Tabs defaultValue="overview" value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col space-y-6">
-        <div className="flex items-center justify-between">
-            <TabsList className="bg-card/50 border border-primary/10 h-12 p-1">
-                <TabsTrigger value="overview" className="gap-2 px-4">
-                    <Brain className="size-4" /> Overview
-                </TabsTrigger>
-                <TabsTrigger value="vc-method" className="gap-2 px-4">
-                    <Calculator className="size-4" /> VC Method
-                </TabsTrigger>
-                <TabsTrigger value="scorecard" className="gap-2 px-4" data-tour="scorecard-tab">
-                    <Check className="size-4" /> Scorecard
-                </TabsTrigger>
-                <TabsTrigger value="market-comps" className="gap-2 px-4">
-                    <Briefcase className="size-4" /> Comps
-                </TabsTrigger>
-                <TabsTrigger value="dcf" className="gap-2 px-4">
-                    <LineChart className="size-4" /> DCF
-                </TabsTrigger>
-                <TabsTrigger value="checklist" className="gap-2 px-4">
-                    <ListChecks className="size-4" /> Checklist
-                </TabsTrigger>
-            </TabsList>
+      <Tabs defaultValue="overview" value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col space-y-4 md:space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
+              <TabsList className="bg-card/50 border border-primary/10 h-10 md:h-12 p-1 inline-flex w-max sm:w-auto">
+                  <TabsTrigger value="overview" className="gap-1.5 px-2 md:px-4 text-xs md:text-sm">
+                      <Brain className="size-3.5 md:size-4" /> <span className="hidden xs:inline">Overview</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="vc-method" className="gap-1.5 px-2 md:px-4 text-xs md:text-sm">
+                      <Calculator className="size-3.5 md:size-4" /> <span className="hidden xs:inline">VC</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="scorecard" className="gap-1.5 px-2 md:px-4 text-xs md:text-sm" data-tour="scorecard-tab">
+                      <Check className="size-3.5 md:size-4" /> <span className="hidden xs:inline">Score</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="market-comps" className="gap-1.5 px-2 md:px-4 text-xs md:text-sm">
+                      <Briefcase className="size-3.5 md:size-4" /> <span className="hidden xs:inline">Comps</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="dcf" className="gap-1.5 px-2 md:px-4 text-xs md:text-sm">
+                      <LineChart className="size-3.5 md:size-4" /> <span className="hidden xs:inline">DCF</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="checklist" className="gap-1.5 px-2 md:px-4 text-xs md:text-sm">
+                      <ListChecks className="size-3.5 md:size-4" /> <span className="hidden xs:inline">Check</span>
+                  </TabsTrigger>
+              </TabsList>
+            </div>
             
             <Dialog>
                 <DialogTrigger asChild>
-                    <Button variant="outline" size="sm" className="gap-2">
+                    <Button variant="outline" size="sm" className="gap-2 w-full sm:w-auto">
                         <HelpCircle className="size-4" /> Method Guide
                     </Button>
                 </DialogTrigger>
@@ -374,9 +376,9 @@ export default function ValuationEngine() {
             </Dialog>
         </div>
 
-        <div className="grid lg:grid-cols-3 gap-8 flex-1 overflow-hidden">
+        <div className="grid lg:grid-cols-3 gap-4 md:gap-8 flex-1 overflow-hidden">
             {/* Main Workspace Area (Scrollable) */}
-            <div className="lg:col-span-2 overflow-y-auto pr-2 pb-20 space-y-6 h-full">
+            <div className="lg:col-span-2 overflow-y-auto pr-0 md:pr-2 pb-20 space-y-4 md:space-y-6 h-full">
                 
                 <TabsContent value="overview" className="mt-0 space-y-6 animate-in fade-in zoom-in-95 duration-300">
                     <Card className="bg-card/50 border-primary/10">
