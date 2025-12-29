@@ -93,14 +93,25 @@ export function ValuationProvider({ children }: { children: ReactNode }) {
   const [selectedMethodology, setSelectedMethodology] = useState<string>("blended");
   const [calculatedValuation, setCalculatedValuation] = useState<number | null>(null);
 
-  // Load existing company data on mount
+  // Load existing company data on mount (only if not already set)
   useEffect(() => {
     const loadCompanyData = async () => {
+      // Don't overwrite if we already have a company loaded (e.g., from onboarding)
+      if (currentCompanyId) return;
+      
       try {
         const companies = await companiesApi.getAll();
         if (companies.length > 0) {
-          // Load the first company (in a real app, we'd have company selection)
-          const company = companies[0];
+          // Find the most recently created company with a valid name
+          const validCompanies = companies.filter(c => c.name && c.name.trim() !== '');
+          if (validCompanies.length === 0) return; // No valid companies, stay in demo mode
+          
+          // Sort by createdAt descending to get most recent
+          const sortedCompanies = validCompanies.sort((a, b) => 
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          );
+          
+          const company = sortedCompanies[0];
           setCurrentCompanyId(company.id);
           setCompanyProfile({
             name: company.name,
@@ -114,7 +125,11 @@ export function ValuationProvider({ children }: { children: ReactNode }) {
           // Load snapshots for this company
           const snapshots = await snapshotsApi.getByCompany(company.id);
           if (snapshots.length > 0) {
-            const latest = snapshots[0]; // Most recent snapshot
+            // Sort by createdAt descending to get most recent
+            const sortedSnapshots = snapshots.sort((a, b) => 
+              new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+            );
+            const latest = sortedSnapshots[0];
             setFinancials({
               revenue: latest.revenue,
               growthRate: latest.growthRate,
@@ -142,7 +157,7 @@ export function ValuationProvider({ children }: { children: ReactNode }) {
     };
     
     loadCompanyData();
-  }, []);
+  }, [currentCompanyId]);
 
   const updateProfile = (data: Partial<CompanyProfile>) => {
     setCompanyProfile(prev => ({ ...prev, ...data }));
