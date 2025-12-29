@@ -11,13 +11,24 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { SECTORS, STAGES, REGIONS, METHODOLOGY_DESCRIPTIONS, MOCK_COMPS } from "@/lib/constants";
-import { ArrowRight, Check, Sparkles, Building2, TrendingUp, Users, Rocket, History, Scale, Briefcase, Plus, Trash2, ArrowLeft } from "lucide-react";
+import { ArrowRight, Check, Sparkles, Building2, TrendingUp, Users, Rocket, History, Scale, Briefcase, Plus, Trash2, ArrowLeft, AlertCircle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { z } from "zod";
+
+const basicsSchema = z.object({
+  name: z.string().min(1, "Company name is required"),
+  sector: z.string().min(1, "Please select a sector"),
+  stage: z.string().min(1, "Please select a stage"),
+  region: z.string().min(1, "Please select a region"),
+  foundedYear: z.number().min(1900, "Please select a founded year")
+});
+
 
 export default function Onboarding() {
   const { updateProfile, updateFinancials, updateQualitative, updateHistory, setMethodology, completeOnboarding, setDemoMode } = useValuation();
   const [, setLocation] = useLocation();
   const [step, setStep] = useState(0);
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   // Temporary local state for inputs before committing to context
   const [formData, setFormData] = useState({
@@ -51,7 +62,35 @@ export default function Onboarding() {
     marketScore: 50
   });
 
+  const validateStep = (currentStep: number): boolean => {
+    setErrors({});
+    
+    if (currentStep === 1) {
+      const result = basicsSchema.safeParse({
+        name: formData.name,
+        sector: formData.sector,
+        stage: formData.stage,
+        region: formData.region,
+        foundedYear: formData.foundedYear
+      });
+      
+      if (!result.success) {
+        const newErrors: Record<string, string> = {};
+        result.error.errors.forEach(err => {
+          if (err.path[0]) {
+            newErrors[err.path[0] as string] = err.message;
+          }
+        });
+        setErrors(newErrors);
+        return false;
+      }
+    }
+    
+    return true;
+  };
+
   const handleNext = () => {
+    if (!validateStep(step)) return;
     setStep(prev => prev + 1);
   };
 
@@ -179,22 +218,30 @@ export default function Onboarding() {
         icon: <Building2 className="size-6 text-primary" />,
         content: (
             <div className="space-y-6">
+                {Object.keys(errors).length > 0 && (
+                    <div className="bg-destructive/10 border border-destructive/30 text-destructive rounded-lg p-3 flex items-center gap-2 text-sm">
+                        <AlertCircle className="size-4 flex-shrink-0" />
+                        <span>Please fill in all required fields to continue.</span>
+                    </div>
+                )}
                 <div className="space-y-2">
-                    <Label>Company Name</Label>
+                    <Label>Company Name <span className="text-destructive">*</span></Label>
                     <Input 
                         placeholder="e.g. Acme Inc." 
                         value={formData.name}
                         onChange={(e) => setFormData({...formData, name: e.target.value})}
                         autoFocus
-                        className="text-lg"
+                        className={`text-lg ${errors.name ? 'border-destructive focus-visible:ring-destructive' : ''}`}
+                        aria-required="true"
                     />
+                    {errors.name && <p className="text-xs text-destructive">{errors.name}</p>}
                 </div>
                 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                        <Label>Founded Year</Label>
+                        <Label>Founded Year <span className="text-destructive">*</span></Label>
                         <Select value={formData.foundedYear.toString()} onValueChange={(v) => setFormData({...formData, foundedYear: parseInt(v)})}>
-                            <SelectTrigger><SelectValue /></SelectTrigger>
+                            <SelectTrigger className={errors.foundedYear ? 'border-destructive' : ''}><SelectValue /></SelectTrigger>
                             <SelectContent>
                                 {Array.from({length: 10}, (_, i) => new Date().getFullYear() - i).map(y => (
                                     <SelectItem key={y} value={y.toString()}>{y}</SelectItem>
@@ -203,9 +250,9 @@ export default function Onboarding() {
                         </Select>
                     </div>
                     <div className="space-y-2">
-                        <Label>Region</Label>
+                        <Label>Region <span className="text-destructive">*</span></Label>
                         <Select value={formData.region} onValueChange={(v) => setFormData({...formData, region: v})}>
-                            <SelectTrigger><SelectValue /></SelectTrigger>
+                            <SelectTrigger className={errors.region ? 'border-destructive' : ''}><SelectValue /></SelectTrigger>
                             <SelectContent>
                                 {REGIONS.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}
                             </SelectContent>
@@ -215,18 +262,18 @@ export default function Onboarding() {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                        <Label>Sector</Label>
+                        <Label>Sector <span className="text-destructive">*</span></Label>
                         <Select value={formData.sector} onValueChange={(v) => setFormData({...formData, sector: v})}>
-                            <SelectTrigger><SelectValue /></SelectTrigger>
+                            <SelectTrigger className={errors.sector ? 'border-destructive' : ''}><SelectValue /></SelectTrigger>
                             <SelectContent>
                                 {SECTORS.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
                             </SelectContent>
                         </Select>
                     </div>
                     <div className="space-y-2">
-                        <Label>Current Stage</Label>
+                        <Label>Current Stage <span className="text-destructive">*</span></Label>
                         <Select value={formData.stage} onValueChange={(v) => setFormData({...formData, stage: v})}>
-                            <SelectTrigger><SelectValue /></SelectTrigger>
+                            <SelectTrigger className={errors.stage ? 'border-destructive' : ''}><SelectValue /></SelectTrigger>
                             <SelectContent>
                                 {STAGES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
                             </SelectContent>
