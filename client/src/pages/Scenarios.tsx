@@ -8,9 +8,10 @@ import { Slider } from "@/components/ui/slider";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
-import { Plus, History, TrendingUp, AlertTriangle, Save, PlayCircle, RefreshCcw } from "lucide-react";
+import { Plus, History, TrendingUp, AlertTriangle, Save, PlayCircle, RefreshCcw, Flag, CheckCircle2, Clock, Circle } from "lucide-react";
 import { useState } from "react";
 import simulationBg from '@assets/generated_images/futuristic_financial_simulation_control_panel_background.png';
+import { MOCK_MILESTONES } from "@/lib/constants";
 
 const SCENARIO_DATA = [
   { date: '2025', baseline: 12.5, optimistic: 12.5, conservative: 12.5 },
@@ -45,6 +46,7 @@ export default function Scenarios() {
       <Tabs defaultValue="projection" className="space-y-4">
         <TabsList className="bg-card/50 border border-primary/10">
           <TabsTrigger value="projection" className="gap-2"><TrendingUp className="size-4" /> Future Projections</TabsTrigger>
+          <TabsTrigger value="milestones" className="gap-2"><Flag className="size-4" /> Milestones</TabsTrigger>
           <TabsTrigger value="history" className="gap-2"><History className="size-4" /> Round History</TabsTrigger>
         </TabsList>
 
@@ -166,6 +168,110 @@ export default function Scenarios() {
                                 <div className="text-4xl font-bold font-heading text-foreground">$115M</div>
                             </div>
                          </CardContent>
+                    </Card>
+                </div>
+            </div>
+        </TabsContent>
+
+        <TabsContent value="milestones">
+            <div className="grid md:grid-cols-3 gap-6">
+                <div className="md:col-span-2 space-y-6">
+                    <Card className="bg-card/50 backdrop-blur-sm border-primary/10">
+                        <CardHeader>
+                            <CardTitle>Milestone Timeline</CardTitle>
+                            <CardDescription>Key events driving your valuation narrative.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="relative">
+                            <div className="absolute left-8 top-6 bottom-6 w-px bg-border border-l border-dashed border-primary/30" />
+                            <div className="space-y-8 relative">
+                                {MOCK_MILESTONES.map((milestone, i) => (
+                                    <div key={i} className="flex gap-6 items-start relative group">
+                                        <div className={`
+                                            z-10 size-4 rounded-full border-2 mt-1.5 shrink-0 flex items-center justify-center
+                                            ${milestone.type === 'past' ? 'bg-primary border-primary' : 
+                                              milestone.type === 'round' ? 'bg-emerald-500 border-emerald-500 ring-4 ring-emerald-500/20' : 
+                                              'bg-background border-muted-foreground'}
+                                        `}>
+                                            {milestone.type === 'past' && <div className="size-1.5 bg-primary-foreground rounded-full" />}
+                                        </div>
+                                        <div className={`
+                                            flex-1 p-4 rounded-lg border transition-all duration-300
+                                            ${milestone.type === 'future' ? 'bg-secondary/20 border-dashed border-border/60 hover:border-primary/30 hover:bg-secondary/40' : 
+                                              milestone.type === 'round' ? 'bg-emerald-500/5 border-emerald-500/30' :
+                                              'bg-card/80 border-border hover:border-primary/20'}
+                                        `}>
+                                            <div className="flex justify-between items-start mb-1">
+                                                <div className="flex items-center gap-2">
+                                                    <span className={`font-bold ${milestone.type === 'future' ? 'text-muted-foreground' : 'text-foreground'}`}>
+                                                        {milestone.title}
+                                                    </span>
+                                                    {milestone.type === 'round' && <Badge className="bg-emerald-500 hover:bg-emerald-600">Funding Event</Badge>}
+                                                </div>
+                                                <span className="text-xs font-mono text-muted-foreground">{milestone.date}</span>
+                                            </div>
+                                            <p className="text-sm text-muted-foreground mb-3">{milestone.description}</p>
+                                            <div className="flex items-center gap-2">
+                                                <Badge variant="outline" className={`text-[10px] ${
+                                                    milestone.impact === 'Critical' ? 'border-emerald-500/30 text-emerald-500' :
+                                                    milestone.impact === 'High' ? 'border-blue-500/30 text-blue-500' :
+                                                    'border-border text-muted-foreground'
+                                                }`}>
+                                                    {milestone.impact} Impact
+                                                </Badge>
+                                                <span className={`text-xs font-mono font-bold ${
+                                                    milestone.type === 'future' ? 'text-muted-foreground' : 'text-emerald-500'
+                                                }`}>
+                                                    {milestone.score}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </CardContent>
+                    </Card>
+                </div>
+
+                <div className="space-y-6">
+                    <Card className="bg-primary/5 border-primary/10">
+                        <CardHeader>
+                            <CardTitle className="text-sm">Future Modeling</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <p className="text-sm text-muted-foreground">
+                                Hitting your Q3 2026 milestone ("Achieve $1M ARR") is projected to unlock a <strong>$25M+ valuation</strong> band.
+                            </p>
+                            <div className="space-y-2">
+                                <div className="flex justify-between text-sm">
+                                    <span>Current Probability</span>
+                                    <span className="font-bold text-primary">65%</span>
+                                </div>
+                                <div className="h-2 bg-secondary rounded-full overflow-hidden">
+                                    <div className="h-full bg-primary w-[65%]" />
+                                </div>
+                            </div>
+                            <Button variant="outline" className="w-full">Adjust Probabilities</Button>
+                        </CardContent>
+                    </Card>
+
+                    <Card className="bg-card/50 border-primary/10">
+                        <CardHeader>
+                            <CardTitle className="text-sm">Legend</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-3">
+                            <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                                <div className="size-3 rounded-full bg-primary" />
+                                <span>Completed Milestone</span>
+                            </div>
+                            <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                                <div className="size-3 rounded-full bg-emerald-500 ring-2 ring-emerald-500/20" />
+                                <span>Funding Round</span>
+                            </div>
+                            <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                                <div className="size-3 rounded-full border-2 border-muted-foreground" />
+                                <span>Projected Event</span>
+                            </div>
+                        </CardContent>
                     </Card>
                 </div>
             </div>

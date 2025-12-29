@@ -1,21 +1,24 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { ArrowUpRight, TrendingUp, DollarSign, Activity, Users, ShieldCheck } from "lucide-react";
-import { 
-  Area, 
-  AreaChart, 
-  CartesianGrid, 
-  XAxis, 
-  YAxis, 
-  Tooltip, 
-  ResponsiveContainer,
-  PieChart,
-  Pie,
+import {
+  Area,
+  AreaChart,
+  Bar,
+  BarChart,
+  CartesianGrid,
   Cell,
-  Legend
+  Legend,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
 } from "recharts";
-import { MOCK_VALUATION_HISTORY, MOCK_METHODOLOGY_BREAKDOWN } from "@/lib/constants";
+import { Activity, ArrowUpRight, DollarSign, ShieldCheck, TrendingUp, Users } from "lucide-react";
+
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { MOCK_METHODOLOGY_BREAKDOWN, MOCK_VALUATION_HISTORY, MOCK_MILESTONES } from "@/lib/constants";
 import { SimulationSheet } from "@/components/dashboard/SimulationSheet";
 
 export default function Dashboard() {
@@ -196,11 +199,7 @@ export default function Dashboard() {
             </CardHeader>
             <CardContent>
                 <div className="space-y-4">
-                    {[
-                        { title: "Product Launch v2.0", date: "Dec 15, 2025", impact: "High", score: "+$2M" },
-                        { title: "Key Hire: CTO", date: "Nov 20, 2025", impact: "Medium", score: "+$1.5M" },
-                        { title: "Partnership with BigCorp", date: "Oct 10, 2025", impact: "High", score: "+$3M" },
-                    ].map((item, i) => (
+                    {MOCK_MILESTONES.slice(0, 3).map((item, i) => (
                         <div key={i} className="flex items-center justify-between p-3 rounded-lg bg-secondary/50 border border-border/50">
                             <div className="flex flex-col">
                                 <span className="font-medium text-sm">{item.title}</span>

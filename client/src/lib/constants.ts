@@ -66,3 +66,54 @@ export const MOCK_METHODOLOGY_BREAKDOWN = [
   { name: "Risk Factor Summation", value: 12000000, fill: "hsl(var(--chart-4))" },
   { name: "DCF", value: 10500000, fill: "hsl(var(--chart-5))" },
 ];
+
+export const MOCK_MILESTONES = [
+  { 
+    title: "Product Launch v2.0", 
+    date: "Dec 15, 2025", 
+    impact: "High", 
+    score: "+$2M",
+    type: "past",
+    description: "Successfully launched core platform with 99.9% uptime."
+  },
+  { 
+    title: "Key Hire: CTO", 
+    date: "Nov 20, 2025", 
+    impact: "Medium", 
+    score: "+$1.5M",
+    type: "past",
+    description: "Ex-Google engineering lead joined the founding team."
+  },
+  { 
+    title: "Partnership with BigCorp", 
+    date: "Oct 10, 2025", 
+    impact: "High", 
+    score: "+$3M",
+    type: "past",
+    description: "Signed LOI for pilot program with Fortune 500 partner."
+  },
+  {
+    title: "Seed Round Close",
+    date: "Aug 15, 2024",
+    impact: "Critical",
+    score: "$8.5M Valuation",
+    type: "round",
+    description: "Raised $1.5M led by EarlyBird VC."
+  },
+  { 
+    title: "Achieve $1M ARR", 
+    date: "Q3 2026 (Proj)", 
+    impact: "High", 
+    score: "Projected",
+    type: "future",
+    description: "Milestone for Series A readiness."
+  },
+  { 
+    title: "Series A Fundraise", 
+    date: "Q4 2026 (Proj)", 
+    impact: "Critical", 
+    score: "Target: $25M Val",
+    type: "future",
+    description: "Next major equity financing event."
+  }
+];
