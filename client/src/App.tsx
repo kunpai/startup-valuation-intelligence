@@ -12,6 +12,7 @@ import Reports from "@/pages/Reports";
 import ReportDetail from "@/pages/ReportDetail";
 import DealRoom from "@/pages/DealRoom";
 import Onboarding from "@/pages/Onboarding";
+import PlatformOverview from "@/pages/PlatformOverview";
 import { ValuationProvider, useValuation } from "@/context/ValuationContext";
 
 function Router() {
@@ -26,6 +27,7 @@ function Router() {
          <AppLayout>
             <Switch>
                 <Route path="/" component={Dashboard} />
+                <Route path="/guide" component={PlatformOverview} />
                 <Route path="/calculator" component={Calculator} />
                 <Route path="/comparables" component={MarketComps} />
                 <Route path="/scenarios" component={Scenarios} />

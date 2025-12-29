@@ -21,6 +21,7 @@ import {
   Briefcase,
   History,
   HelpCircle,
+  BookOpen,
 } from "lucide-react";
 import { useLocation, Link } from "wouter";
 
@@ -32,6 +33,12 @@ export function AppSidebar({ onStartTour }: AppSidebarProps) {
   const [location] = useLocation();
 
   const items = [
+    {
+      title: "Platform Guide",
+      url: "/guide",
+      icon: BookOpen,
+      tourId: "guide-nav",
+    },
     {
       title: "Dashboard",
       url: "/",
