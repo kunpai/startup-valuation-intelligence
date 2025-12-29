@@ -1,7 +1,6 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
-import { MOCK_VALUATION_HISTORY, MOCK_METHODOLOGY_BREAKDOWN, MOCK_MILESTONES, SECTORS, STAGES, REGIONS } from '@/lib/constants';
+import { createContext, useContext, useState, type ReactNode } from 'react';
+import { SECTORS, STAGES, REGIONS } from '@/lib/constants';
 
-// Define shapes for our data
 interface CompanyProfile {
   name: string;
   sector: string;
@@ -11,10 +10,10 @@ interface CompanyProfile {
 }
 
 interface Financials {
-  revenue: number; // Annual
-  growthRate: number; // %
+  revenue: number;
+  growthRate: number;
   lastRoundValuation: number;
-  burnRate: number; // Monthly
+  burnRate: number;
   cashBalance: number;
 }
 
@@ -37,7 +36,6 @@ interface ValuationContextType {
   resetData: () => void;
 }
 
-// Default/Mock Data (The Sample Company)
 const DEFAULT_PROFILE: CompanyProfile = {
   name: "Acme AI",
   sector: "B2B SaaS",
@@ -64,8 +62,6 @@ const ValuationContext = createContext<ValuationContextType | undefined>(undefin
 
 export function ValuationProvider({ children }: { children: ReactNode }) {
   const [isDemoMode, setIsDemoMode] = useState(true);
-  
-  // User Data State
   const [companyProfile, setCompanyProfile] = useState<CompanyProfile>(DEFAULT_PROFILE);
   const [financials, setFinancials] = useState<Financials>(DEFAULT_FINANCIALS);
   const [qualitative, setQualitative] = useState<QualitativeScores>(DEFAULT_QUALITATIVE);
