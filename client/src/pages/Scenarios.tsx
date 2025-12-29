@@ -8,23 +8,101 @@ import { Slider } from "@/components/ui/slider";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, ReferenceLine } from 'recharts';
-import { Plus, History, TrendingUp, AlertTriangle, Save, PlayCircle, RefreshCcw, Flag, CheckCircle2, Clock, Circle } from "lucide-react";
-import { useState } from "react";
+import { Plus, History, TrendingUp, AlertTriangle, Save, PlayCircle, RefreshCcw, Flag, CheckCircle2, Clock, Circle, Trash2, Loader2 } from "lucide-react";
+import { useState, useMemo } from "react";
 import simulationBg from '@assets/generated_images/futuristic_financial_simulation_control_panel_background.png';
 import { MOCK_MILESTONES } from "@/lib/constants";
-
-const SCENARIO_DATA = [
-  { date: '2025', baseline: 12.5, optimistic: 12.5, conservative: 12.5 },
-  { date: '2026', baseline: 18.0, optimistic: 22.0, conservative: 15.0 },
-  { date: '2027', baseline: 32.0, optimistic: 45.0, conservative: 24.0 },
-  { date: '2028', baseline: 55.0, optimistic: 78.0, conservative: 38.0 },
-  { date: '2029', baseline: 82.0, optimistic: 115.0, conservative: 55.0 },
-];
+import { useValuation } from "@/context/ValuationContext";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { scenariosApi } from "@/lib/api";
+import type { Scenario } from "@shared/schema";
+import { toast } from "sonner";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
 export default function Scenarios() {
+  const { currentCompanyId, financials, calculatedValuation } = useValuation();
+  const queryClient = useQueryClient();
+  
   const [growthAccel, setGrowthAccel] = useState(50);
   const [dilution, setDilution] = useState(20);
   const [exitMultiple, setExitMultiple] = useState(10);
+  const [scenarioName, setScenarioName] = useState("");
+  const [saveDialogOpen, setSaveDialogOpen] = useState(false);
+
+  // Fetch saved scenarios
+  const { data: savedScenarios = [], isLoading } = useQuery<Scenario[]>({
+    queryKey: ['/api/scenarios', currentCompanyId],
+    queryFn: async () => {
+      if (!currentCompanyId) return [];
+      return scenariosApi.getByCompany(currentCompanyId);
+    },
+    enabled: !!currentCompanyId
+  });
+
+  // Create scenario mutation
+  const createScenarioMutation = useMutation({
+    mutationFn: async (data: any) => {
+      if (!currentCompanyId) throw new Error('No company selected');
+      return scenariosApi.create({ ...data, companyId: currentCompanyId });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/scenarios', currentCompanyId] });
+      toast.success("Scenario saved");
+      setSaveDialogOpen(false);
+      setScenarioName("");
+    },
+    onError: () => {
+      toast.error("Failed to save scenario");
+    }
+  });
+
+  // Delete scenario mutation
+  const deleteScenarioMutation = useMutation({
+    mutationFn: async (id: string) => scenariosApi.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/scenarios', currentCompanyId] });
+      toast.success("Scenario deleted");
+    }
+  });
+
+  // Generate projection data based on current parameters
+  const projectionData = useMemo(() => {
+    const baseRevenue = financials.revenue / 1000000; // Convert to millions
+    const baseGrowth = financials.growthRate / 100;
+    const accelFactor = 1 + (growthAccel / 100);
+    
+    return [
+      { date: '2025', baseline: baseRevenue, optimistic: baseRevenue, conservative: baseRevenue },
+      { date: '2026', baseline: baseRevenue * (1 + baseGrowth), optimistic: baseRevenue * (1 + baseGrowth * accelFactor), conservative: baseRevenue * (1 + baseGrowth * 0.7) },
+      { date: '2027', baseline: baseRevenue * Math.pow(1 + baseGrowth, 2), optimistic: baseRevenue * Math.pow(1 + baseGrowth * accelFactor, 2), conservative: baseRevenue * Math.pow(1 + baseGrowth * 0.7, 2) },
+      { date: '2028', baseline: baseRevenue * Math.pow(1 + baseGrowth, 3), optimistic: baseRevenue * Math.pow(1 + baseGrowth * accelFactor, 3), conservative: baseRevenue * Math.pow(1 + baseGrowth * 0.7, 3) },
+      { date: '2029', baseline: baseRevenue * Math.pow(1 + baseGrowth, 4), optimistic: baseRevenue * Math.pow(1 + baseGrowth * accelFactor, 4), conservative: baseRevenue * Math.pow(1 + baseGrowth * 0.7, 4) },
+    ];
+  }, [financials.revenue, financials.growthRate, growthAccel]);
+
+  const handleSaveScenario = () => {
+    if (!scenarioName.trim()) {
+      toast.error("Please enter a scenario name");
+      return;
+    }
+    createScenarioMutation.mutate({
+      name: scenarioName,
+      description: `Growth: +${growthAccel}%, Dilution: ${dilution}%, Exit Multiple: ${exitMultiple}x`,
+      revenue: financials.revenue,
+      growthRate: financials.growthRate + growthAccel,
+      exitValuation: (calculatedValuation || financials.revenue * 10) * exitMultiple / 10,
+      exitYear: 2029,
+      assumptions: { growthAccel, dilution, exitMultiple }
+    });
+  };
+
+  const loadScenario = (scenario: Scenario) => {
+    const assumptions = scenario.assumptions as any || {};
+    setGrowthAccel(assumptions.growthAccel || 50);
+    setDilution(assumptions.dilution || 20);
+    setExitMultiple(assumptions.exitMultiple || 10);
+    toast.success(`Loaded scenario: ${scenario.name}`);
+  };
 
   return (
     <div className="space-y-6">
@@ -34,12 +112,34 @@ export default function Scenarios() {
           <p className="text-muted-foreground mt-1">Manage valuation history and model future outcomes.</p>
         </div>
         <div className="flex gap-2">
-           <Button variant="outline" className="gap-2">
-             <Save className="size-4" /> Save Scenario
-           </Button>
-           <Button className="gap-2">
-             <Plus className="size-4" /> Add Historical Round
-           </Button>
+           <Dialog open={saveDialogOpen} onOpenChange={setSaveDialogOpen}>
+             <DialogTrigger asChild>
+               <Button variant="outline" className="gap-2" disabled={!currentCompanyId}>
+                 <Save className="size-4" /> Save Scenario
+               </Button>
+             </DialogTrigger>
+             <DialogContent>
+               <DialogHeader>
+                 <DialogTitle>Save Scenario</DialogTitle>
+                 <DialogDescription>Give this scenario a name to save your current parameters.</DialogDescription>
+               </DialogHeader>
+               <div className="py-4">
+                 <Label>Scenario Name</Label>
+                 <Input 
+                   placeholder="e.g., Optimistic Growth Case" 
+                   value={scenarioName}
+                   onChange={(e) => setScenarioName(e.target.value)}
+                   className="mt-2"
+                 />
+               </div>
+               <DialogFooter>
+                 <Button onClick={handleSaveScenario} disabled={createScenarioMutation.isPending}>
+                   {createScenarioMutation.isPending ? <Loader2 className="size-4 animate-spin mr-2" /> : null}
+                   Save Scenario
+                 </Button>
+               </DialogFooter>
+             </DialogContent>
+           </Dialog>
         </div>
       </div>
 
@@ -65,7 +165,7 @@ export default function Scenarios() {
                                 <span className="text-primary font-mono font-bold">+{growthAccel}%</span>
                             </div>
                             <Slider 
-                                defaultValue={[50]} 
+                                value={[growthAccel]} 
                                 max={100} 
                                 step={1} 
                                 onValueChange={(v) => setGrowthAccel(v[0])}
@@ -80,7 +180,7 @@ export default function Scenarios() {
                                 <span className="text-destructive font-mono font-bold">-{dilution}%</span>
                             </div>
                             <Slider 
-                                defaultValue={[20]} 
+                                value={[dilution]} 
                                 max={50} 
                                 step={1} 
                                 onValueChange={(v) => setDilution(v[0])}
@@ -95,7 +195,7 @@ export default function Scenarios() {
                                 <span className="text-emerald-500 font-mono font-bold">{exitMultiple}x</span>
                             </div>
                             <Slider 
-                                defaultValue={[10]} 
+                                value={[exitMultiple]} 
                                 max={30} 
                                 step={0.5} 
                                 onValueChange={(v) => setExitMultiple(v[0])}
@@ -105,13 +205,57 @@ export default function Scenarios() {
                         </div>
 
                         <div className="flex gap-3 pt-4">
-                            <Button className="flex-1 gap-2 bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20">
-                                <PlayCircle className="size-4" /> Run Sim
+                            <Button 
+                                className="flex-1 gap-2 bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20"
+                                onClick={() => setSaveDialogOpen(true)}
+                                disabled={!currentCompanyId}
+                            >
+                                <Save className="size-4" /> Save
                             </Button>
-                            <Button variant="outline" className="flex-1 gap-2">
+                            <Button 
+                                variant="outline" 
+                                className="flex-1 gap-2"
+                                onClick={() => {
+                                  setGrowthAccel(50);
+                                  setDilution(20);
+                                  setExitMultiple(10);
+                                }}
+                            >
                                 <RefreshCcw className="size-4" /> Reset
                             </Button>
                         </div>
+
+                        {/* Saved Scenarios */}
+                        {savedScenarios.length > 0 && (
+                          <div className="pt-6 border-t border-border/50">
+                            <Label className="text-xs text-muted-foreground mb-3 block">Saved Scenarios</Label>
+                            <div className="space-y-2">
+                              {savedScenarios.map((scenario) => (
+                                <div 
+                                  key={scenario.id} 
+                                  className="flex items-center justify-between p-2 rounded-lg bg-secondary/30 hover:bg-secondary/50 transition-colors cursor-pointer group"
+                                  onClick={() => loadScenario(scenario)}
+                                >
+                                  <div>
+                                    <div className="text-sm font-medium">{scenario.name}</div>
+                                    <div className="text-xs text-muted-foreground">{scenario.description}</div>
+                                  </div>
+                                  <Button 
+                                    variant="ghost" 
+                                    size="icon" 
+                                    className="size-6 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      deleteScenarioMutation.mutate(scenario.id);
+                                    }}
+                                  >
+                                    <Trash2 className="size-3" />
+                                  </Button>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
                     </CardContent>
                 </Card>
 
@@ -129,7 +273,7 @@ export default function Scenarios() {
                         <CardContent className="relative z-10">
                             <div className="h-[400px] w-full">
                                 <ResponsiveContainer width="100%" height="100%">
-                                    <AreaChart data={SCENARIO_DATA} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
+                                    <AreaChart data={projectionData} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
                                         <defs>
                                             <linearGradient id="colorOptimistic" x1="0" y1="0" x2="0" y2="1">
                                                 <stop offset="5%" stopColor="hsl(var(--chart-2))" stopOpacity={0.3}/>

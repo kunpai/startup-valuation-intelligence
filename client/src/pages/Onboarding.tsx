@@ -66,33 +66,31 @@ export default function Onboarding() {
   };
 
   const handleComplete = async () => {
-    // Save all data to context
-    updateProfile({
-      name: formData.name,
-      sector: formData.sector,
-      stage: formData.stage,
-      region: formData.region,
-      foundedYear: formData.foundedYear
-    });
-    
-    updateFinancials({
-      revenue: formData.revenue,
-      growthRate: formData.growthRate,
-      lastRoundValuation: formData.lastRoundValuation,
-      burnRate: formData.burnRate,
-      cashBalance: formData.cashBalance
-    });
-    
-    updateQualitative({
-      team: formData.teamScore,
-      product: formData.productScore,
-      market: formData.marketScore
+    // Pass all data directly to completeOnboarding to avoid state timing issues
+    await completeOnboarding({
+      profile: {
+        name: formData.name,
+        sector: formData.sector,
+        stage: formData.stage,
+        region: formData.region,
+        foundedYear: formData.foundedYear
+      },
+      financials: {
+        revenue: formData.revenue,
+        growthRate: formData.growthRate,
+        lastRoundValuation: formData.lastRoundValuation,
+        burnRate: formData.burnRate,
+        cashBalance: formData.cashBalance
+      },
+      qualitative: {
+        team: formData.teamScore,
+        product: formData.productScore,
+        market: formData.marketScore
+      },
+      methodology: formData.methodology
     });
     
     updateHistory(formData.history);
-    setMethodology(formData.methodology);
-    
-    await completeOnboarding();
     localStorage.setItem('start-tour', 'true');
     setLocation("/");
   };

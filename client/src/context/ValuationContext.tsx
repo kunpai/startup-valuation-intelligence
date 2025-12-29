@@ -31,6 +31,13 @@ interface ValuationHistoryItem {
   valuation: number;
 }
 
+interface OnboardingData {
+  profile: CompanyProfile;
+  financials: Financials;
+  qualitative: QualitativeScores;
+  methodology: string;
+}
+
 interface ValuationContextType {
   isDemoMode: boolean;
   currentCompanyId: string | null;
@@ -47,7 +54,7 @@ interface ValuationContextType {
   updateHistory: (data: ValuationHistoryItem[]) => void;
   setMethodology: (method: string) => void;
   setCalculatedValuation: (value: number) => void;
-  completeOnboarding: () => Promise<void>;
+  completeOnboarding: (data: OnboardingData) => Promise<void>;
   saveValuation: (snapshotName?: string) => Promise<void>;
   resetData: () => void;
 }
@@ -157,22 +164,41 @@ export function ValuationProvider({ children }: { children: ReactNode }) {
     setSelectedMethodology(method);
   };
 
-  const completeOnboarding = async () => {
+  const completeOnboarding = async (data: OnboardingData) => {
     try {
-      // Create company in database
+      // Update local state first
+      setCompanyProfile(data.profile);
+      setFinancials(data.financials);
+      setQualitative(data.qualitative);
+      setSelectedMethodology(data.methodology);
+      
+      // Create company in database with provided data
       const company = await companiesApi.create({
-        name: companyProfile.name,
-        sector: companyProfile.sector,
-        stage: companyProfile.stage,
-        region: companyProfile.region,
-        foundedYear: companyProfile.foundedYear
+        name: data.profile.name,
+        sector: data.profile.sector,
+        stage: data.profile.stage,
+        region: data.profile.region,
+        foundedYear: data.profile.foundedYear
       });
       
       setCurrentCompanyId(company.id);
       setIsDemoMode(false);
       
-      // Create initial snapshot
-      await saveValuationSnapshot(company.id, "Initial Setup");
+      // Create initial snapshot with provided data
+      await snapshotsApi.create({
+        companyId: company.id,
+        revenue: data.financials.revenue,
+        growthRate: data.financials.growthRate,
+        lastRoundValuation: data.financials.lastRoundValuation,
+        burnRate: data.financials.burnRate,
+        cashBalance: data.financials.cashBalance,
+        teamScore: data.qualitative.team,
+        productScore: data.qualitative.product,
+        marketScore: data.qualitative.market,
+        calculatedValuation: null,
+        selectedMethodology: data.methodology,
+        snapshotName: "Initial Setup"
+      });
     } catch (error) {
       console.error("Failed to save company profile:", error);
       // Still complete onboarding even if save fails
