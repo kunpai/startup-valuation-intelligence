@@ -33,7 +33,7 @@ export function AppSidebar() {
       icon: LayoutDashboard,
     },
     {
-      title: "Valuation Calculator",
+      title: "Valuation Engine",
       url: "/calculator",
       icon: Calculator,
     },
