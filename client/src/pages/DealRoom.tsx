@@ -22,7 +22,10 @@ import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { MOCK_VALUATION_HISTORY } from "@/lib/constants";
 
 export default function DealRoom() {
-  const { companyProfile, financials, qualitative, valuationHistory } = useValuation();
+  const { companyProfile, financials, qualitative, valuationHistory, calculatedValuation } = useValuation();
+  
+  // Calculate confidence score from qualitative scores
+  const confidenceScore = Math.round((qualitative.team + qualitative.market + qualitative.product) / 3);
 
   const handlePrint = () => {
     window.print();
@@ -96,7 +99,9 @@ export default function DealRoom() {
                             <CardTitle className="text-sm font-medium text-muted-foreground">Pre-Money Valuation</CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <div className="text-3xl font-bold font-heading text-primary">$12.5M</div>
+                            <div className="text-3xl font-bold font-heading text-primary">
+                              ${calculatedValuation ? (calculatedValuation / 1000000).toFixed(1) : '—'}M
+                            </div>
                             <div className="text-xs text-muted-foreground mt-1">Blended Weighted Average</div>
                         </CardContent>
                     </Card>
@@ -105,8 +110,8 @@ export default function DealRoom() {
                             <CardTitle className="text-sm font-medium text-muted-foreground">Confidence Score</CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <div className="text-3xl font-bold font-heading text-emerald-500">82/100</div>
-                            <div className="text-xs text-muted-foreground mt-1">High Data Reliability</div>
+                            <div className="text-3xl font-bold font-heading text-emerald-500">{confidenceScore}/100</div>
+                            <div className="text-xs text-muted-foreground mt-1">{confidenceScore >= 70 ? 'High' : confidenceScore >= 50 ? 'Moderate' : 'Low'} Data Reliability</div>
                         </CardContent>
                     </Card>
                     <Card className="bg-secondary/10 border-primary/10 shadow-sm">
