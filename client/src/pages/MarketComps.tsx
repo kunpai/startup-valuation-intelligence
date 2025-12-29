@@ -1,5 +1,5 @@
 import { toast } from "sonner";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -7,34 +7,91 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { MOCK_COMPS, SECTORS, STAGES, REGIONS } from "@/lib/constants";
-import { Search, Filter, Download, Plus, Sparkles, Building2, TrendingUp, DollarSign, X } from "lucide-react";
+import { Search, Filter, Download, Plus, Sparkles, Building2, TrendingUp, DollarSign, X, Loader2, Trash2 } from "lucide-react";
 import { ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ZAxis, Legend } from 'recharts';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
+import { useValuation } from "@/context/ValuationContext";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import type { Comparable } from "@shared/schema";
 
 export default function MarketComps() {
+  const { currentCompanyId } = useValuation();
+  const queryClient = useQueryClient();
+  
   // Filters
   const [selectedSector, setSelectedSector] = useState("all-sectors");
   const [selectedStage, setSelectedStage] = useState("all-stages");
   const [selectedRegion, setSelectedRegion] = useState("all-regions");
   const [searchQuery, setSearchQuery] = useState("");
 
-  // Lists
-  const [myComps, setMyComps] = useState<typeof MOCK_COMPS>([]);
-  const [isSearching, setIsSearching] = useState(false);
+  // Fetch user's saved comparables from database (scoped to current company)
+  const { data: savedComps = [], isLoading } = useQuery<Comparable[]>({
+    queryKey: ['/api/comparables', currentCompanyId],
+    queryFn: async () => {
+      if (!currentCompanyId) return [];
+      const res = await fetch(`/api/companies/${currentCompanyId}/comparables`);
+      if (!res.ok) throw new Error('Failed to fetch comparables');
+      return res.json();
+    },
+    enabled: !!currentCompanyId
+  });
+
+  // Create comparable mutation
+  const createCompMutation = useMutation({
+    mutationFn: async (data: any) => {
+      if (!currentCompanyId) {
+        throw new Error('No company selected');
+      }
+      const res = await fetch(`/api/companies/${currentCompanyId}/comparables`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      if (!res.ok) throw new Error('Failed to create comparable');
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/comparables', currentCompanyId] });
+      toast.success("Comparable added", { description: "Saved to your analysis set." });
+    },
+    onError: (error) => {
+      toast.error("Failed to add comparable", { description: error.message });
+    }
+  });
+
+  // Delete comparable mutation
+  const deleteCompMutation = useMutation({
+    mutationFn: async (id: string) => {
+      if (!currentCompanyId) {
+        throw new Error('No company selected');
+      }
+      const res = await fetch(`/api/companies/${currentCompanyId}/comparables/${id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error('Failed to delete comparable');
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/comparables', currentCompanyId] });
+      toast.success("Comparable removed");
+    },
+    onError: (error) => {
+      toast.error("Failed to remove comparable", { description: error.message });
+    }
+  });
 
   // New Comp Dialog State
   const [newCompOpen, setNewCompOpen] = useState(false);
   const [newCompData, setNewCompData] = useState({
-    company: "",
+    companyName: "",
     sector: SECTORS[0],
-    round: STAGES[1],
+    stage: STAGES[1],
     valuation: 0,
     revenue: 0,
-    growth: 0,
-    region: REGIONS[0]
+    growthRate: 0,
+    region: REGIONS[0],
+    fundingRound: "Seed",
+    source: "Manual Entry"
   });
 
   // Filter Logic
@@ -45,34 +102,55 @@ export default function MarketComps() {
       const matchesRegion = selectedRegion === "all-regions" || comp.region === selectedRegion;
       const matchesSearch = comp.company.toLowerCase().includes(searchQuery.toLowerCase());
       
-      // Filter out comps already in "My Comps"
-      const isNotSelected = !myComps.some(myComp => myComp.company === comp.company);
+      // Filter out comps already saved
+      const isNotSelected = !savedComps.some((myComp: Comparable) => myComp.companyName === comp.company);
 
       return matchesSector && matchesStage && matchesRegion && matchesSearch && isNotSelected;
     });
-  }, [selectedSector, selectedStage, selectedRegion, searchQuery, myComps]);
+  }, [selectedSector, selectedStage, selectedRegion, searchQuery, savedComps]);
 
   const addToMyComps = (comp: typeof MOCK_COMPS[0]) => {
-    setMyComps([...myComps, comp]);
+    if (!currentCompanyId) {
+      toast.error("No company selected", { description: "Please complete onboarding first." });
+      return;
+    }
+    createCompMutation.mutate({
+      companyName: comp.company,
+      sector: comp.sector,
+      stage: comp.round,
+      valuation: comp.valuation,
+      revenue: comp.revenue,
+      growthRate: comp.growth,
+      region: comp.region,
+      fundingRound: comp.round,
+      source: "Market Data"
+    });
   };
 
-  const removeFromMyComps = (companyName: string) => {
-    setMyComps(myComps.filter(c => c.company !== companyName));
+  const removeFromMyComps = (id: string) => {
+    deleteCompMutation.mutate(id);
   };
 
   const handleCreateComp = () => {
-    const newComp = { ...newCompData };
-    setMyComps([...myComps, newComp]);
+    if (!currentCompanyId) {
+      toast.error("No company selected", { description: "Please complete onboarding first." });
+      return;
+    }
+    createCompMutation.mutate({
+      ...newCompData,
+      isUserAdded: 1
+    });
     setNewCompOpen(false);
-    // Reset form
     setNewCompData({
-        company: "",
+        companyName: "",
         sector: SECTORS[0],
-        round: STAGES[1],
+        stage: STAGES[1],
         valuation: 0,
         revenue: 0,
-        growth: 0,
-        region: REGIONS[0]
+        growthRate: 0,
+        region: REGIONS[0],
+        fundingRound: "Seed",
+        source: "Manual Entry"
     });
   };
 
@@ -83,9 +161,9 @@ export default function MarketComps() {
     return sorted.length % 2 !== 0 ? sorted[mid][key] : (sorted[mid - 1][key] + sorted[mid][key]) / 2;
   };
 
-  const medianValuation = calculateMedian(myComps.length > 0 ? myComps : filteredComps, 'valuation');
-  const medianMultiple = myComps.length > 0 
-    ? calculateMedian(myComps.map(c => ({...c, multiple: c.valuation/c.revenue})), 'multiple')
+  const medianValuation = calculateMedian(savedComps.length > 0 ? savedComps : filteredComps, 'valuation');
+  const medianMultiple = savedComps.length > 0 
+    ? calculateMedian(savedComps.map((c: Comparable) => ({...c, multiple: (c.valuation || 0)/(c.revenue || 1)})), 'multiple')
     : 0;
 
   return (
@@ -187,7 +265,7 @@ export default function MarketComps() {
                 <CardHeader>
                     <CardTitle className="text-lg">My Analysis Set</CardTitle>
                     <CardDescription className="text-primary-foreground/70">
-                        {myComps.length} companies selected
+                        {savedComps.length} companies selected
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
@@ -195,13 +273,13 @@ export default function MarketComps() {
                         <div>
                             <div className="text-xs opacity-70 mb-1">Median Valuation</div>
                             <div className="text-2xl font-bold font-mono">
-                                {myComps.length > 0 ? `$${(medianValuation/1000000).toFixed(1)}M` : "—"}
+                                {savedComps.length > 0 ? `$${(medianValuation/1000000).toFixed(1)}M` : "—"}
                             </div>
                         </div>
                          <div>
                             <div className="text-xs opacity-70 mb-1">Implied Multiple</div>
                             <div className="text-2xl font-bold font-mono">
-                                {myComps.length > 0 ? `${medianMultiple.toFixed(1)}x` : "—"}
+                                {savedComps.length > 0 ? `${medianMultiple.toFixed(1)}x` : "—"}
                             </div>
                         </div>
                     </div>
@@ -224,8 +302,8 @@ export default function MarketComps() {
                                     <Label className="text-right">Company</Label>
                                     <Input 
                                         className="col-span-3" 
-                                        value={newCompData.company} 
-                                        onChange={(e) => setNewCompData({...newCompData, company: e.target.value})}
+                                        value={newCompData.companyName} 
+                                        onChange={(e) => setNewCompData({...newCompData, companyName: e.target.value})}
                                     />
                                 </div>
                                 <div className="grid grid-cols-4 items-center gap-4">
@@ -311,7 +389,7 @@ export default function MarketComps() {
                                 />
                                 <Legend />
                                 <Scatter name="Market Matches" data={filteredComps} fill="hsl(var(--muted-foreground))" fillOpacity={0.4} />
-                                <Scatter name="Selected Comps" data={myComps} fill="hsl(var(--primary))" shape="circle" />
+                                <Scatter name="Selected Comps" data={savedComps} fill="hsl(var(--primary))" shape="circle" />
                                 <Scatter 
                                     name="Your Company" 
                                     data={[{ revenue: 600000, valuation: 12500000, growth: 120 }]} 
@@ -328,7 +406,7 @@ export default function MarketComps() {
                 <div className="flex items-center justify-between mb-4">
                     <TabsList className="bg-card/50 border border-primary/10">
                         <TabsTrigger value="recommended">Recommended Matches ({filteredComps.length})</TabsTrigger>
-                        <TabsTrigger value="selected">My Selection ({myComps.length})</TabsTrigger>
+                        <TabsTrigger value="selected">My Selection ({savedComps.length})</TabsTrigger>
                     </TabsList>
                 </div>
 
@@ -401,18 +479,18 @@ export default function MarketComps() {
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {myComps.length === 0 ? (
+                                {savedComps.length === 0 ? (
                                     <TableRow>
                                         <TableCell colSpan={4} className="h-24 text-center text-muted-foreground">
                                             You haven't added any comps yet. Select from matches or add manually.
                                         </TableCell>
                                     </TableRow>
                                 ) : (
-                                    myComps.map((comp, i) => (
-                                        <TableRow key={i} className="hover:bg-secondary/30 transition-colors bg-primary/5">
+                                    savedComps.map((comp: Comparable) => (
+                                        <TableRow key={comp.id} className="hover:bg-secondary/30 transition-colors bg-primary/5">
                                             <TableCell>
                                                 <div className="font-medium text-foreground flex items-center gap-2">
-                                                    {comp.company}
+                                                    {comp.companyName}
                                                     <Badge className="bg-primary/20 text-primary hover:bg-primary/30 border-primary/20 text-[10px] h-5 px-1.5">Selected</Badge>
                                                 </div>
                                                 <div className="flex gap-2 mt-1">
@@ -424,21 +502,21 @@ export default function MarketComps() {
                                                 <div className="text-xs space-y-1">
                                                     <div className="flex justify-between w-32">
                                                         <span className="text-muted-foreground">Rev:</span>
-                                                        <span className="font-mono">${(comp.revenue/1000).toFixed(0)}k</span>
+                                                        <span className="font-mono">${((comp.revenue || 0)/1000).toFixed(0)}k</span>
                                                     </div>
                                                     <div className="flex justify-between w-32">
                                                         <span className="text-muted-foreground">Growth:</span>
-                                                        <span className="font-mono text-emerald-500">{comp.growth}%</span>
+                                                        <span className="font-mono text-emerald-500">{comp.growthRate || 0}%</span>
                                                     </div>
                                                 </div>
                                             </TableCell>
                                             <TableCell className="text-right">
-                                                <div className="font-mono font-medium">${(comp.valuation / 1000000).toFixed(1)}M</div>
-                                                <div className="text-xs text-muted-foreground">{comp.round}</div>
+                                                <div className="font-mono font-medium">${((comp.valuation || 0) / 1000000).toFixed(1)}M</div>
+                                                <div className="text-xs text-muted-foreground">{comp.stage}</div>
                                             </TableCell>
                                             <TableCell className="text-right">
-                                                <Button size="sm" variant="ghost" onClick={() => removeFromMyComps(comp.company)} className="text-muted-foreground hover:text-destructive">
-                                                    <X className="size-4" />
+                                                <Button size="sm" variant="ghost" onClick={() => removeFromMyComps(comp.id)} className="text-muted-foreground hover:text-destructive">
+                                                    <Trash2 className="size-4" />
                                                 </Button>
                                             </TableCell>
                                         </TableRow>

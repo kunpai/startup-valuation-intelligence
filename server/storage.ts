@@ -4,6 +4,7 @@ import {
   companies,
   valuationSnapshots,
   scenarios,
+  comparables,
   type User, 
   type InsertUser,
   type Company,
@@ -11,7 +12,9 @@ import {
   type ValuationSnapshot,
   type InsertValuationSnapshot,
   type Scenario,
-  type InsertScenario
+  type InsertScenario,
+  type Comparable,
+  type InsertComparable
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc } from "drizzle-orm";
@@ -41,6 +44,14 @@ export interface IStorage {
   createScenario(scenario: InsertScenario): Promise<Scenario>;
   updateScenario(id: string, scenario: Partial<InsertScenario>): Promise<Scenario | undefined>;
   deleteScenario(id: string): Promise<boolean>;
+  
+  // Comparables
+  getComparable(id: string): Promise<Comparable | undefined>;
+  getComparablesByCompany(companyId: string): Promise<Comparable[]>;
+  getAllComparables(): Promise<Comparable[]>;
+  createComparable(comparable: InsertComparable): Promise<Comparable>;
+  updateComparable(id: string, comparable: Partial<InsertComparable>): Promise<Comparable | undefined>;
+  deleteComparable(id: string): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -155,6 +166,50 @@ export class DatabaseStorage implements IStorage {
   
   async deleteScenario(id: string): Promise<boolean> {
     const result = await db.delete(scenarios).where(eq(scenarios.id, id));
+    return result.rowCount ? result.rowCount > 0 : false;
+  }
+  
+  // Comparables
+  async getComparable(id: string): Promise<Comparable | undefined> {
+    const [comparable] = await db.select().from(comparables).where(eq(comparables.id, id));
+    return comparable || undefined;
+  }
+  
+  async getComparablesByCompany(companyId: string): Promise<Comparable[]> {
+    return await db
+      .select()
+      .from(comparables)
+      .where(eq(comparables.companyId, companyId))
+      .orderBy(desc(comparables.createdAt));
+  }
+  
+  async getAllComparables(): Promise<Comparable[]> {
+    return await db.select().from(comparables).orderBy(desc(comparables.createdAt));
+  }
+  
+  async createComparable(insertComparable: InsertComparable): Promise<Comparable> {
+    const revenueMultiple = insertComparable.revenue && insertComparable.valuation 
+      ? insertComparable.valuation / insertComparable.revenue 
+      : null;
+    
+    const [comparable] = await db
+      .insert(comparables)
+      .values({ ...insertComparable, revenueMultiple })
+      .returning();
+    return comparable;
+  }
+  
+  async updateComparable(id: string, updateData: Partial<InsertComparable>): Promise<Comparable | undefined> {
+    const [comparable] = await db
+      .update(comparables)
+      .set(updateData)
+      .where(eq(comparables.id, id))
+      .returning();
+    return comparable || undefined;
+  }
+  
+  async deleteComparable(id: string): Promise<boolean> {
+    const result = await db.delete(comparables).where(eq(comparables.id, id));
     return result.rowCount ? result.rowCount > 0 : false;
   }
 }

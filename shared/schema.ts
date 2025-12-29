@@ -73,6 +73,36 @@ export const insertValuationSnapshotSchema = createInsertSchema(valuationSnapsho
 export type InsertValuationSnapshot = z.infer<typeof insertValuationSnapshotSchema>;
 export type ValuationSnapshot = typeof valuationSnapshots.$inferSelect;
 
+// User-editable Market Comparables
+export const comparables = pgTable("comparables", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  companyId: varchar("company_id").references(() => companies.id, { onDelete: 'cascade' }),
+  
+  companyName: text("company_name").notNull(),
+  sector: text("sector").notNull(),
+  stage: text("stage").notNull(),
+  region: text("region"),
+  
+  revenue: real("revenue"),
+  valuation: real("valuation"),
+  growthRate: real("growth_rate"),
+  fundingRound: text("funding_round"),
+  
+  revenueMultiple: real("revenue_multiple"),
+  source: text("source"),
+  isUserAdded: integer("is_user_added").default(1),
+  
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertComparableSchema = createInsertSchema(comparables).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertComparable = z.infer<typeof insertComparableSchema>;
+export type Comparable = typeof comparables.$inferSelect;
+
 // Scenarios table - different what-if models
 export const scenarios = pgTable("scenarios", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -102,3 +132,9 @@ export const insertScenarioSchema = createInsertSchema(scenarios).omit({
 
 export type InsertScenario = z.infer<typeof insertScenarioSchema>;
 export type Scenario = typeof scenarios.$inferSelect;
+
+// Re-export auth models (required for Replit Auth)
+export * from "./models/auth";
+
+// Re-export chat models
+export * from "./models/chat";

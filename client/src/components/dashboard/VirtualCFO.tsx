@@ -4,10 +4,11 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
-import { Send, Bot, User, Sparkles, TrendingUp, AlertTriangle, X, MessageSquare, Maximize2, Minimize2 } from "lucide-react";
+import { Send, Bot, User, Sparkles, TrendingUp, AlertTriangle, X, MessageSquare, Maximize2, Minimize2, Loader2 } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { useLocation } from "wouter";
+import { useValuation } from "@/context/ValuationContext";
 import miraAvatar from "@assets/mira-avatar.png";
 
 interface Message {
@@ -49,8 +50,10 @@ export function VirtualCFO() {
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
+  const [streamingContent, setStreamingContent] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
   const [location] = useLocation();
+  const { currentCompanyId, financials, qualitative, calculatedValuation, companyProfile } = useValuation();
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -66,8 +69,8 @@ export function VirtualCFO() {
   }, [location]);
   */
 
-  const handleSend = () => {
-    if (!input.trim()) return;
+  const handleSend = async () => {
+    if (!input.trim() || isTyping) return;
 
     const userMsg: Message = {
       id: Date.now().toString(),
@@ -77,51 +80,91 @@ export function VirtualCFO() {
     };
 
     setMessages(prev => [...prev, userMsg]);
+    const userQuestion = input;
     setInput("");
     setIsTyping(true);
+    setStreamingContent("");
 
-    // Simulate AI Response
-    setTimeout(() => {
-      let responseContent = "That's an interesting question. Generally, improving your recurring revenue quality is the fastest lever.";
-      let type: 'text' | 'insight' | 'alert' = 'text';
-
-      const currentContext = PAGE_CONTEXTS[location] || "General Valuation Context";
-      
-      // Simple keyword matching enhanced with page context logic
-      const inputLower = input.toLowerCase();
-      
-      if (inputLower.includes("page") || inputLower.includes("here") || inputLower.includes("context")) {
-          if (location === '/calculator') {
-              responseContent = "You're on the **Calculator**. Adjusting your 'Growth Rate' above 20% usually has the highest impact on the VC Method valuation.";
-              type = 'insight';
-          } else if (location === '/scenarios') {
-              responseContent = "On the **Scenarios** page, try modeling a 'Downside' case with 20% less revenue to test your runway resilience.";
-              type = 'insight';
-          } else {
-             responseContent = `I see you're on the **${currentContext.split(':')[0]}**. How can I help with this specific section?`;
+    try {
+      const response = await fetch('/api/mira/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: userQuestion,
+          companyId: currentCompanyId,
+          context: {
+            currentPage: PAGE_CONTEXTS[location] || "General",
+            financials: {
+              revenue: financials.revenue,
+              growthRate: financials.growthRate,
+              burnRate: financials.burnRate,
+              cashBalance: financials.cashBalance,
+              lastRoundValuation: financials.lastRoundValuation,
+            },
+            qualitative: {
+              team: qualitative.team,
+              market: qualitative.market,
+              product: qualitative.product,
+            },
+            calculatedValuation,
           }
-      } else if (inputLower.includes("improve") || inputLower.includes("higher")) {
-        responseContent = "To increase your valuation, focus on these levers:\n1. **Increase LTV/CAC**: Ideally > 4.0x\n2. **Extend Runway**: Investors prefer 18+ months for Series A.\n3. **Market Expansion**: Validate a secondary market segment.";
-        type = 'insight';
-      } else if (inputLower.includes("risk") || inputLower.includes("bad")) {
-        responseContent = "The biggest risk currently is the high dependence on the 'VC Method' which assumes a $50M exit. If market multiples contract, this valuation could drop by 20%.";
-        type = 'alert';
-      } else if (inputLower.includes("competitor") || inputLower.includes("comps")) {
-        responseContent = "I've found 3 new potential competitors in the Fintech space with recent funding. Check the 'Market Comps' tab to see how their 15x revenue multiples compare to yours.";
-        type = 'text';
-      }
+        })
+      });
 
-      const aiMsg: Message = {
+      if (!response.ok) throw new Error('Failed to get response');
+
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+      let fullContent = "";
+
+      if (reader) {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          const chunk = decoder.decode(value);
+          const lines = chunk.split('\n');
+
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              try {
+                const data = JSON.parse(line.slice(6));
+                if (data.content) {
+                  fullContent += data.content;
+                  setStreamingContent(fullContent);
+                }
+                if (data.done) {
+                  const aiMsg: Message = {
+                    id: (Date.now() + 1).toString(),
+                    role: 'assistant',
+                    content: fullContent,
+                    timestamp: new Date(),
+                    type: 'text'
+                  };
+                  setMessages(prev => [...prev, aiMsg]);
+                  setStreamingContent("");
+                }
+              } catch (e) {
+                // Skip invalid JSON
+              }
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Mira chat error:', error);
+      const errorMsg: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: responseContent,
+        content: "I'm having trouble connecting right now. Please try again in a moment.",
         timestamp: new Date(),
-        type
+        type: 'text'
       };
-      
-      setMessages(prev => [...prev, aiMsg]);
+      setMessages(prev => [...prev, errorMsg]);
+    } finally {
       setIsTyping(false);
-    }, 1500);
+      setStreamingContent("");
+    }
   };
 
   return (
@@ -236,16 +279,24 @@ export function VirtualCFO() {
                             </div>
                         </div>
                         ))}
-                        {isTyping && (
+                        {(isTyping || streamingContent) && (
                             <div className="flex gap-3">
                                 <Avatar className="size-6 border shrink-0 mt-1">
                                     <AvatarImage src={miraAvatar} className="object-cover" />
                                     <AvatarFallback>M</AvatarFallback>
                                 </Avatar>
-                                <div className="bg-secondary/50 border border-border/50 rounded-2xl rounded-tl-sm px-4 py-3 flex items-center gap-1">
-                                    <div className="size-1.5 bg-primary/40 rounded-full animate-bounce [animation-delay:-0.3s]" />
-                                    <div className="size-1.5 bg-primary/40 rounded-full animate-bounce [animation-delay:-0.15s]" />
-                                    <div className="size-1.5 bg-primary/40 rounded-full animate-bounce" />
+                                <div className="bg-secondary/80 border border-border/50 rounded-2xl rounded-tl-sm px-4 py-2.5 max-w-[85%]">
+                                    {streamingContent ? (
+                                        <div className="text-sm whitespace-pre-line leading-relaxed">
+                                            {streamingContent}
+                                            <span className="inline-block w-1 h-4 bg-primary/60 animate-pulse ml-0.5" />
+                                        </div>
+                                    ) : (
+                                        <div className="flex items-center gap-1 py-1">
+                                            <Loader2 className="size-3 animate-spin text-primary/60" />
+                                            <span className="text-xs text-muted-foreground">Thinking...</span>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         )}
