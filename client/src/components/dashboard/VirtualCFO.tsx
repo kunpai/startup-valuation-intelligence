@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Send, Bot, User, Sparkles, TrendingUp, AlertTriangle, X, MessageSquare, Maximize2, Minimize2 } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { cn } from "@/lib/utils";
+import { useLocation } from "wouter";
 
 interface Message {
   id: string;
@@ -33,18 +34,36 @@ const INITIAL_MESSAGES: Message[] = [
   }
 ];
 
+const PAGE_CONTEXTS: Record<string, string> = {
+    '/': "Dashboard: Overview of valuation, key metrics, and methodology breakdown.",
+    '/calculator': "Calculator: Inputting financial data, growth rates, and market sizing.",
+    '/scenarios': "Scenarios: Modeling future exit scenarios, dilution, and growth assumptions.",
+    '/reports': "Reports: Generating and exporting the investor deal room and PDF reports.",
+    '/market': "Market Data: Comparable company analysis and industry benchmarks.",
+    '/onboarding': "Onboarding: Setting up the initial company profile and sector."
+};
+
 export function VirtualCFO() {
   const [messages, setMessages] = useState<Message[]>(INITIAL_MESSAGES);
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const [location] = useLocation();
 
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages, isOpen]);
+
+  // Optional: Proactive message on page change
+  /*
+  useEffect(() => {
+    // Logic to add a context-aware greeting when page changes
+    // avoiding spam by checking last message timestamp or similar logic
+  }, [location]);
+  */
 
   const handleSend = () => {
     if (!input.trim()) return;
@@ -65,13 +84,28 @@ export function VirtualCFO() {
       let responseContent = "That's an interesting question. Generally, improving your recurring revenue quality is the fastest lever.";
       let type: 'text' | 'insight' | 'alert' = 'text';
 
-      if (input.toLowerCase().includes("improve") || input.toLowerCase().includes("higher")) {
+      const currentContext = PAGE_CONTEXTS[location] || "General Valuation Context";
+      
+      // Simple keyword matching enhanced with page context logic
+      const inputLower = input.toLowerCase();
+      
+      if (inputLower.includes("page") || inputLower.includes("here") || inputLower.includes("context")) {
+          if (location === '/calculator') {
+              responseContent = "You're on the **Calculator**. Adjusting your 'Growth Rate' above 20% usually has the highest impact on the VC Method valuation.";
+              type = 'insight';
+          } else if (location === '/scenarios') {
+              responseContent = "On the **Scenarios** page, try modeling a 'Downside' case with 20% less revenue to test your runway resilience.";
+              type = 'insight';
+          } else {
+             responseContent = `I see you're on the **${currentContext.split(':')[0]}**. How can I help with this specific section?`;
+          }
+      } else if (inputLower.includes("improve") || inputLower.includes("higher")) {
         responseContent = "To increase your valuation, focus on these levers:\n1. **Increase LTV/CAC**: Ideally > 4.0x\n2. **Extend Runway**: Investors prefer 18+ months for Series A.\n3. **Market Expansion**: Validate a secondary market segment.";
         type = 'insight';
-      } else if (input.toLowerCase().includes("risk") || input.toLowerCase().includes("bad")) {
+      } else if (inputLower.includes("risk") || inputLower.includes("bad")) {
         responseContent = "The biggest risk currently is the high dependence on the 'VC Method' which assumes a $50M exit. If market multiples contract, this valuation could drop by 20%.";
         type = 'alert';
-      } else if (input.toLowerCase().includes("competitor") || input.toLowerCase().includes("comps")) {
+      } else if (inputLower.includes("competitor") || inputLower.includes("comps")) {
         responseContent = "I've found 3 new potential competitors in the Fintech space with recent funding. Check the 'Market Comps' tab to see how their 15x revenue multiples compare to yours.";
         type = 'text';
       }
