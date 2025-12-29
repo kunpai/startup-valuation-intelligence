@@ -84,7 +84,7 @@ export default function DealRoom() {
         {/* Executive Summary */}
         <div className="p-8 md:p-12 space-y-12">
             
-            <section className="space-y-6">
+            <section className="space-y-6 break-after-page">
                 <div className="flex items-center gap-2 mb-6">
                     <Target className="size-6 text-primary" />
                     <h2 className="text-2xl font-bold">Executive Summary</h2>
@@ -131,6 +131,78 @@ export default function DealRoom() {
 
             <Separator />
 
+             {/* Methodology Detail Section */}
+             <section className="space-y-6 break-after-page">
+                <div className="flex items-center gap-2 mb-6">
+                    <Users className="size-6 text-purple-500" />
+                    <h2 className="text-2xl font-bold">Valuation Methodology</h2>
+                </div>
+                <div className="grid md:grid-cols-2 gap-8 items-center">
+                    <div>
+                        <p className="text-sm text-muted-foreground mb-6 leading-relaxed">
+                            Our valuation model triangulates fair market value using a weighted average of four distinct methodologies, tailored to {companyProfile.name}'s stage ({companyProfile.stage}).
+                        </p>
+                        <div className="space-y-4">
+                            <div className="space-y-2">
+                                <div className="flex justify-between text-sm font-medium">
+                                    <span>Scorecard Method (Qualitative)</span>
+                                    <span>30% Weight</span>
+                                </div>
+                                <div className="h-2 bg-secondary rounded-full overflow-hidden">
+                                    <div className="h-full bg-blue-500 w-[30%]" />
+                                </div>
+                                <p className="text-xs text-muted-foreground">Adjusts regional averages based on team strength and market size.</p>
+                            </div>
+                            <div className="space-y-2">
+                                <div className="flex justify-between text-sm font-medium">
+                                    <span>VC Method (Future)</span>
+                                    <span>40% Weight</span>
+                                </div>
+                                <div className="h-2 bg-secondary rounded-full overflow-hidden">
+                                    <div className="h-full bg-primary w-[40%]" />
+                                </div>
+                                <p className="text-xs text-muted-foreground">Back-solves from exit value based on investor ROI targets.</p>
+                            </div>
+                            <div className="space-y-2">
+                                <div className="flex justify-between text-sm font-medium">
+                                    <span>Market Comps (Relative)</span>
+                                    <span>20% Weight</span>
+                                </div>
+                                <div className="h-2 bg-secondary rounded-full overflow-hidden">
+                                    <div className="h-full bg-purple-500 w-[20%]" />
+                                </div>
+                                <p className="text-xs text-muted-foreground">Benchmarks against recent transactions of similar peers.</p>
+                            </div>
+                            <div className="space-y-2">
+                                <div className="flex justify-between text-sm font-medium">
+                                    <span>DCF (Intrinsic)</span>
+                                    <span>10% Weight</span>
+                                </div>
+                                <div className="h-2 bg-secondary rounded-full overflow-hidden">
+                                    <div className="h-full bg-emerald-500 w-[10%]" />
+                                </div>
+                                <p className="text-xs text-muted-foreground">Projects future cash flows (lower weight for early stage).</p>
+                            </div>
+                        </div>
+                    </div>
+                     <Card className="bg-secondary/5 border-primary/10">
+                        <CardHeader>
+                            <CardTitle className="text-sm">Why this mix?</CardTitle>
+                        </CardHeader>
+                        <CardContent className="text-sm text-muted-foreground space-y-3">
+                            <p>
+                                For a <strong>{companyProfile.stage}</strong> company, traditional financial metrics (DCF) are less reliable due to high volatility. 
+                            </p>
+                            <p>
+                                Therefore, we place higher emphasis on the <strong>VC Method</strong> (reflecting future potential) and the <strong>Scorecard Method</strong> (reflecting team and market quality), while using Market Comps as a reality check.
+                            </p>
+                        </CardContent>
+                    </Card>
+                </div>
+            </section>
+            
+            <Separator />
+            
             {/* Financial Highlights */}
             <section className="space-y-6">
                 <div className="flex items-center gap-2 mb-6">
