@@ -55,7 +55,7 @@ interface ValuationContextType {
   setMethodology: (method: string) => void;
   setCalculatedValuation: (value: number) => void;
   completeOnboarding: (data: OnboardingData) => Promise<void>;
-  saveValuation: (snapshotName?: string) => Promise<void>;
+  saveValuation: (snapshotName?: string, valuation?: number) => Promise<void>;
   resetData: () => void;
 }
 
@@ -221,7 +221,7 @@ export function ValuationProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const saveValuationSnapshot = async (companyId: string, snapshotName?: string) => {
+  const saveValuationSnapshot = async (companyId: string, valuation: number | null, snapshotName?: string) => {
     try {
       await snapshotsApi.create({
         companyId,
@@ -233,7 +233,7 @@ export function ValuationProvider({ children }: { children: ReactNode }) {
         teamScore: qualitative.team,
         productScore: qualitative.product,
         marketScore: qualitative.market,
-        calculatedValuation,
+        calculatedValuation: valuation,
         selectedMethodology,
         snapshotName
       });
@@ -243,13 +243,14 @@ export function ValuationProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const saveValuation = async (snapshotName?: string) => {
+  const saveValuation = async (snapshotName?: string, valuation?: number) => {
     if (!currentCompanyId) {
       console.error("No company selected");
       return;
     }
     
-    await saveValuationSnapshot(currentCompanyId, snapshotName);
+    const valueToSave = valuation ?? calculatedValuation;
+    await saveValuationSnapshot(currentCompanyId, valueToSave, snapshotName);
   };
 
   const resetData = () => {

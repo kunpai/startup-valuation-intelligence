@@ -289,7 +289,7 @@ export default function ValuationEngine() {
 
     try {
       setCalculatedValuation(blendedValuation);
-      await saveValuation(`Valuation - ${new Date().toLocaleDateString()}`);
+      await saveValuation(`Valuation - ${new Date().toLocaleDateString()}`, blendedValuation);
       toast.success("Report Saved", {
         description: "Valuation report has been saved to your dashboard.",
         action: {
