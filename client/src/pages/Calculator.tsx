@@ -28,7 +28,8 @@ import {
   Plus,
   Table as TableIcon,
   ListChecks,
-  ShieldAlert
+  ShieldAlert,
+  FileText
 } from "lucide-react";
 import {
   Dialog,
@@ -466,7 +467,12 @@ export default function ValuationEngine() {
                                 </div>
                              </div>
                              
-                             <div className="flex justify-end">
+                             <div className="flex justify-end gap-3">
+                                <Link href="/reports/deal-room">
+                                    <Button className="gap-2 bg-primary/10 text-primary hover:bg-primary/20 border-primary/20 shadow-none" variant="outline">
+                                        <FileText className="size-4" /> View Deal Room Report
+                                    </Button>
+                                </Link>
                                 <Link href="/scenarios">
                                     <Button className="gap-2" variant="outline">
                                         Model Future Scenarios <ArrowRight className="size-4" />

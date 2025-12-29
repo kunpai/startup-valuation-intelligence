@@ -52,7 +52,7 @@ export default function Reports() {
 
       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
         {/* Quick Actions */}
-        <Link href="/calculator">
+        <Link href="/reports/deal-room">
             <Card className="bg-primary text-primary-foreground border-none shadow-xl shadow-primary/10 relative overflow-hidden group cursor-pointer hover:shadow-2xl transition-all duration-300 h-full">
                 <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
                     <FileText className="size-32 rotate-12" />
@@ -122,6 +122,34 @@ export default function Reports() {
         <h2 className="text-xl font-bold font-heading mb-4">Recent Documents</h2>
         <Card className="bg-card/50 backdrop-blur-sm border-primary/10">
             <div className="divide-y divide-border/50">
+                <div className="flex items-center justify-between p-4 hover:bg-secondary/30 transition-colors">
+                    <Link href="/reports/deal-room" className="flex-1 flex items-center gap-4 cursor-pointer">
+                        <div className="bg-secondary/50 p-3 rounded-lg">
+                            <FileText className="size-6 text-muted-foreground" />
+                        </div>
+                        <div>
+                            <h3 className="font-medium hover:text-primary transition-colors">Series A Deal Room</h3>
+                            <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
+                                <span>Investment Memo</span>
+                                <span>•</span>
+                                <span className="flex items-center gap-1"><Calendar className="size-3" /> Today</span>
+                                <span>•</span>
+                                <span>Live</span>
+                            </div>
+                        </div>
+                    </Link>
+                    <div className="flex items-center gap-3">
+                        <Badge variant="secondary" className="bg-emerald-500/10 text-emerald-500 border-emerald-500/20">
+                            Ready
+                        </Badge>
+                        <Link href="/reports/deal-room">
+                            <Button variant="outline" size="sm" className="gap-2">
+                                View <Share2 className="size-3" />
+                            </Button>
+                        </Link>
+                    </div>
+                </div>
+
                 {REPORTS.map((report, i) => (
                     <div key={i} className="flex items-center justify-between p-4 hover:bg-secondary/30 transition-colors">
                         <Link href={`/reports/${i}`} className="flex-1 flex items-center gap-4 cursor-pointer">

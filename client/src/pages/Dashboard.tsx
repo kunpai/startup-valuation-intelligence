@@ -336,7 +336,7 @@ export default function Dashboard() {
                 <div className="text-sm text-muted-foreground leading-relaxed">
                     Increasing your <span className="text-foreground font-medium">LTV/CAC ratio</span> from 3.5 to 4.0 could add an estimated <span className="text-emerald-500 font-bold">$1.8M</span> to your pre-money valuation.
                 </div>
-                <Link href="/reports/0">
+                <Link href="/reports/deal-room">
                   <Button variant="secondary" className="w-full mt-2">View Full Report</Button>
                 </Link>
             </CardContent>

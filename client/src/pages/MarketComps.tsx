@@ -1,3 +1,4 @@
+import { toast } from "sonner";
 import { useState, useMemo } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -95,7 +96,7 @@ export default function MarketComps() {
           <p className="text-muted-foreground mt-1">Discover and manage peer benchmarks for your valuation.</p>
         </div>
         <div className="flex gap-2">
-            <Button variant="outline">
+            <Button variant="outline" onClick={() => toast.success("Analysis Exported", { description: "Market data added to Deal Room report." })}>
                 <Download className="size-4 mr-2" /> Export Analysis
             </Button>
         </div>
