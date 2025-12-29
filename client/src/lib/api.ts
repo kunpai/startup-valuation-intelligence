@@ -76,7 +76,7 @@ export const snapshotsApi = {
   },
 };
 
-// Scenarios API
+// Scenarios API (company-scoped for data isolation)
 export const scenariosApi = {
   getByCompany: async (companyId: string): Promise<Scenario[]> => {
     const res = await fetch(`${API_BASE}/companies/${companyId}/scenarios`);
@@ -90,18 +90,18 @@ export const scenariosApi = {
     return res.json();
   },
   
-  create: async (data: InsertScenario): Promise<Scenario> => {
-    const res = await fetch(`${API_BASE}/scenarios`, {
+  create: async (companyId: string, data: Omit<InsertScenario, 'companyId'>): Promise<Scenario> => {
+    const res = await fetch(`${API_BASE}/companies/${companyId}/scenarios`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
+      body: JSON.stringify({ ...data, companyId }),
     });
     if (!res.ok) throw new Error("Failed to create scenario");
     return res.json();
   },
   
-  update: async (id: string, data: Partial<InsertScenario>): Promise<Scenario> => {
-    const res = await fetch(`${API_BASE}/scenarios/${id}`, {
+  update: async (companyId: string, id: string, data: Partial<InsertScenario>): Promise<Scenario> => {
+    const res = await fetch(`${API_BASE}/companies/${companyId}/scenarios/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
@@ -110,8 +110,8 @@ export const scenariosApi = {
     return res.json();
   },
   
-  delete: async (id: string): Promise<void> => {
-    const res = await fetch(`${API_BASE}/scenarios/${id}`, {
+  delete: async (companyId: string, id: string): Promise<void> => {
+    const res = await fetch(`${API_BASE}/companies/${companyId}/scenarios/${id}`, {
       method: "DELETE",
     });
     if (!res.ok) throw new Error("Failed to delete scenario");

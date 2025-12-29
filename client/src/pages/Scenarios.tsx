@@ -43,7 +43,7 @@ export default function Scenarios() {
   const createScenarioMutation = useMutation({
     mutationFn: async (data: any) => {
       if (!currentCompanyId) throw new Error('No company selected');
-      return scenariosApi.create({ ...data, companyId: currentCompanyId });
+      return scenariosApi.create(currentCompanyId, data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/scenarios', currentCompanyId] });
@@ -58,7 +58,10 @@ export default function Scenarios() {
 
   // Delete scenario mutation
   const deleteScenarioMutation = useMutation({
-    mutationFn: async (id: string) => scenariosApi.delete(id),
+    mutationFn: async (id: string) => {
+      if (!currentCompanyId) throw new Error('No company selected');
+      return scenariosApi.delete(currentCompanyId, id);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/scenarios', currentCompanyId] });
       toast.success("Scenario deleted");

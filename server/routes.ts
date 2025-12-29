@@ -133,7 +133,7 @@ export async function registerRoutes(
     }
   });
   
-  // ==================== Scenarios ====================
+  // ==================== Scenarios (company-scoped) ====================
   
   // Get scenarios for a company
   app.get("/api/companies/:companyId/scenarios", async (req, res) => {
@@ -146,24 +146,13 @@ export async function registerRoutes(
     }
   });
   
-  // Get single scenario
-  app.get("/api/scenarios/:id", async (req, res) => {
+  // Create scenario for a company
+  app.post("/api/companies/:companyId/scenarios", async (req, res) => {
     try {
-      const scenario = await storage.getScenario(req.params.id);
-      if (!scenario) {
-        return res.status(404).json({ error: "Scenario not found" });
-      }
-      res.json(scenario);
-    } catch (error) {
-      console.error("Error fetching scenario:", error);
-      res.status(500).json({ error: "Failed to fetch scenario" });
-    }
-  });
-  
-  // Create scenario
-  app.post("/api/scenarios", async (req, res) => {
-    try {
-      const validatedData = insertScenarioSchema.parse(req.body);
+      const validatedData = insertScenarioSchema.parse({
+        ...req.body,
+        companyId: req.params.companyId
+      });
       const scenario = await storage.createScenario(validatedData);
       res.status(201).json(scenario);
     } catch (error) {
@@ -172,8 +161,8 @@ export async function registerRoutes(
     }
   });
   
-  // Update scenario
-  app.patch("/api/scenarios/:id", async (req, res) => {
+  // Update scenario for a company
+  app.patch("/api/companies/:companyId/scenarios/:id", async (req, res) => {
     try {
       const scenario = await storage.updateScenario(req.params.id, req.body);
       if (!scenario) {
@@ -186,8 +175,8 @@ export async function registerRoutes(
     }
   });
   
-  // Delete scenario
-  app.delete("/api/scenarios/:id", async (req, res) => {
+  // Delete scenario for a company
+  app.delete("/api/companies/:companyId/scenarios/:id", async (req, res) => {
     try {
       const success = await storage.deleteScenario(req.params.id);
       if (!success) {
