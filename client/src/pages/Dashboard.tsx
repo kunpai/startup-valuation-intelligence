@@ -12,6 +12,11 @@ import {
   Tooltip,
   XAxis,
   YAxis,
+  Radar,
+  RadarChart,
+  PolarGrid,
+  PolarAngleAxis,
+  PolarRadiusAxis,
 } from "recharts";
 import { Activity, ArrowUpRight, DollarSign, ShieldCheck, TrendingUp, Users } from "lucide-react";
 
@@ -39,6 +44,25 @@ export default function Dashboard() {
     : (financials.revenue * 15) + (financials.lastRoundValuation * 0.5);
 
   const displayValuationStr = `$${(displayValuation / 1000000).toFixed(1)}M`;
+
+  // Qualitative Data for Radar Chart
+  const radarData = [
+    { subject: 'Team', A: financials.revenue > 0 ? 85 : 60, B: 75, fullMark: 100 },
+    { subject: 'Market', A: 90, B: 80, fullMark: 100 },
+    { subject: 'Product', A: 80, B: 70, fullMark: 100 },
+    { subject: 'Traction', A: financials.growthRate > 10 ? 85 : 50, B: 65, fullMark: 100 },
+    { subject: 'Moat', A: 70, B: 60, fullMark: 100 },
+    { subject: 'Scalability', A: 75, B: 70, fullMark: 100 },
+  ];
+
+  // Dynamic values based on context
+  const userRadarData = [
+      { subject: 'Team', score: 80, benchmark: 70 },
+      { subject: 'Market', score: 85, benchmark: 75 },
+      { subject: 'Product', score: 75, benchmark: 65 },
+      { subject: 'Growth', score: financials.growthRate > 20 ? 90 : 60, benchmark: 50 },
+      { subject: 'Moat', score: 70, benchmark: 60 },
+  ];
 
   return (
     <div className="space-y-6">
@@ -119,6 +143,7 @@ export default function Dashboard() {
             <div className="w-full bg-secondary h-1.5 mt-2 rounded-full overflow-hidden">
               <div className="bg-emerald-500 h-full rounded-full animate-[shimmer_2s_infinite]" style={{ width: "82%" }} />
             </div>
+            <p className="text-xs text-muted-foreground mt-2">Data reliability high</p>
           </CardContent>
         </Card>
 
@@ -198,49 +223,79 @@ export default function Dashboard() {
         </Card>
 
         {/* Methodology Breakdown - Pie Chart */}
-        <Card className="col-span-3 bg-card/50 backdrop-blur-sm border-primary/10 animate-in fade-in slide-in-from-right-8 duration-700 delay-300">
-          <CardHeader>
-            <CardTitle>Methodology Breakdown</CardTitle>
-            <CardDescription>Weighted impact of different valuation models</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="h-[300px] w-full relative">
-               <ResponsiveContainer width="100%" height="100%">
-                 <PieChart margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
-                    <Pie
-                      data={MOCK_METHODOLOGY_BREAKDOWN}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={60}
-                      outerRadius={80}
-                      paddingAngle={5}
-                      dataKey="value"
-                      animationDuration={1500}
-                    >
-                      {MOCK_METHODOLOGY_BREAKDOWN.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.fill} stroke="transparent" />
-                      ))}
-                    </Pie>
-                    <Tooltip 
-                      contentStyle={{ backgroundColor: 'hsl(var(--popover))', borderColor: 'hsl(var(--border))', borderRadius: '8px' }}
-                      formatter={(value: number) => [`$${(value / 1000000).toFixed(1)}M`, "Valuation"]}
-                    />
-                    <Legend 
-                      verticalAlign="bottom" 
-                      height={36}
-                      iconType="circle"
-                      formatter={(value) => <span className="text-xs text-muted-foreground ml-1">{value}</span>}
-                    />
-                 </PieChart>
-               </ResponsiveContainer>
-               {/* Center Text */}
-               <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none pb-8">
-                  <span className="text-xs text-muted-foreground">Blended</span>
-                  <span className="text-xl font-bold font-heading">{displayValuationStr}</span>
-               </div>
-            </div>
-          </CardContent>
-        </Card>
+        <div className="col-span-3 grid gap-4 grid-rows-2">
+            <Card className="bg-card/50 backdrop-blur-sm border-primary/10 animate-in fade-in slide-in-from-right-8 duration-700 delay-300">
+            <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium">Methodology Weights</CardTitle>
+            </CardHeader>
+            <CardContent>
+                <div className="h-[140px] w-full relative">
+                <ResponsiveContainer width="100%" height="100%">
+                    <PieChart margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
+                        <Pie
+                        data={MOCK_METHODOLOGY_BREAKDOWN}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={40}
+                        outerRadius={55}
+                        paddingAngle={5}
+                        dataKey="value"
+                        >
+                        {MOCK_METHODOLOGY_BREAKDOWN.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.fill} stroke="transparent" />
+                        ))}
+                        </Pie>
+                        <Tooltip 
+                        contentStyle={{ backgroundColor: 'hsl(var(--popover))', borderColor: 'hsl(var(--border))', borderRadius: '8px', fontSize: '12px' }}
+                        formatter={(value: number) => [`$${(value / 1000000).toFixed(1)}M`, ""]}
+                        />
+                        <Legend 
+                            layout="vertical" 
+                            verticalAlign="middle" 
+                            align="right"
+                            iconType="circle"
+                            iconSize={8}
+                            formatter={(value) => <span className="text-[10px] text-muted-foreground ml-1">{value}</span>}
+                        />
+                    </PieChart>
+                </ResponsiveContainer>
+                </div>
+            </CardContent>
+            </Card>
+
+            <Card className="bg-card/50 backdrop-blur-sm border-primary/10 animate-in fade-in slide-in-from-right-8 duration-700 delay-400">
+                <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium">Qualitative Benchmarking</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <div className="h-[140px] w-full">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <RadarChart cx="50%" cy="50%" outerRadius="65%" data={userRadarData}>
+                                <PolarGrid stroke="hsl(var(--muted-foreground))" strokeOpacity={0.2} />
+                                <PolarAngleAxis dataKey="subject" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 10 }} />
+                                <Radar
+                                    name="You"
+                                    dataKey="score"
+                                    stroke="hsl(var(--primary))"
+                                    fill="hsl(var(--primary))"
+                                    fillOpacity={0.3}
+                                />
+                                <Radar
+                                    name="Industry Avg"
+                                    dataKey="benchmark"
+                                    stroke="hsl(var(--muted-foreground))"
+                                    fill="hsl(var(--muted-foreground))"
+                                    fillOpacity={0.1}
+                                />
+                                <Tooltip
+                                    contentStyle={{ backgroundColor: 'hsl(var(--popover))', borderColor: 'hsl(var(--border))', borderRadius: '8px', fontSize: '12px' }}
+                                />
+                            </RadarChart>
+                        </ResponsiveContainer>
+                    </div>
+                </CardContent>
+            </Card>
+        </div>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 animate-in fade-in slide-in-from-bottom-8 duration-1000 delay-500">
