@@ -8,23 +8,22 @@ import { Slider } from "@/components/ui/slider";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
-import { Plus, History, TrendingUp, AlertTriangle, Save, PlayCircle } from "lucide-react";
+import { Plus, History, TrendingUp, AlertTriangle, Save, PlayCircle, RefreshCcw } from "lucide-react";
 import { useState } from "react";
+import simulationBg from '@assets/generated_images/futuristic_financial_simulation_control_panel_background.png';
 
 const SCENARIO_DATA = [
-  { date: '2025-Q1', baseline: 12.5, optimistic: 12.5, conservative: 12.5 },
-  { date: '2025-Q2', baseline: 13.2, optimistic: 14.0, conservative: 12.8 },
-  { date: '2025-Q3', baseline: 14.1, optimistic: 15.8, conservative: 13.0 },
-  { date: '2025-Q4', baseline: 15.5, optimistic: 18.2, conservative: 13.2 },
-  { date: '2026-Q1', baseline: 17.0, optimistic: 21.0, conservative: 13.5 },
-  { date: '2026-Q2', baseline: 18.8, optimistic: 24.5, conservative: 13.8 },
-  { date: '2026-Q3', baseline: 21.0, optimistic: 28.0, conservative: 14.0 },
-  { date: '2026-Q4', baseline: 24.5, optimistic: 33.0, conservative: 14.2 },
+  { date: '2025', baseline: 12.5, optimistic: 12.5, conservative: 12.5 },
+  { date: '2026', baseline: 18.0, optimistic: 22.0, conservative: 15.0 },
+  { date: '2027', baseline: 32.0, optimistic: 45.0, conservative: 24.0 },
+  { date: '2028', baseline: 55.0, optimistic: 78.0, conservative: 38.0 },
+  { date: '2029', baseline: 82.0, optimistic: 115.0, conservative: 55.0 },
 ];
 
 export default function Scenarios() {
-  const [growthRate, setGrowthRate] = useState(25);
-  const [marketConditions, setMarketConditions] = useState("neutral");
+  const [growthAccel, setGrowthAccel] = useState(50);
+  const [dilution, setDilution] = useState(20);
+  const [exitMultiple, setExitMultiple] = useState(10);
 
   return (
     <div className="space-y-6">
@@ -52,99 +51,123 @@ export default function Scenarios() {
         <TabsContent value="projection" className="space-y-4">
             <div className="grid lg:grid-cols-3 gap-6">
                 {/* Controls */}
-                <Card className="bg-card/50 backdrop-blur-sm border-primary/10 lg:col-span-1">
+                <Card className="bg-card/50 backdrop-blur-sm border-primary/10 lg:col-span-1 h-fit">
                     <CardHeader>
-                        <CardTitle>Simulation Variables</CardTitle>
-                        <CardDescription>Adjust drivers to forecast valuation bands</CardDescription>
+                        <CardTitle>Simulation Parameters</CardTitle>
+                        <CardDescription>Adjust variables to forecast outcomes.</CardDescription>
                     </CardHeader>
-                    <CardContent className="space-y-6">
+                    <CardContent className="space-y-8">
                         <div className="space-y-4">
                             <div className="flex justify-between">
-                                <Label>Projected Growth (MoM)</Label>
-                                <span className="text-primary font-mono">{growthRate}%</span>
+                                <Label>Growth Acceleration</Label>
+                                <span className="text-primary font-mono font-bold">+{growthAccel}%</span>
                             </div>
                             <Slider 
-                                defaultValue={[25]} 
+                                defaultValue={[50]} 
                                 max={100} 
                                 step={1} 
-                                onValueChange={(v) => setGrowthRate(v[0])}
+                                onValueChange={(v) => setGrowthAccel(v[0])}
+                                className="py-2"
                             />
+                            <p className="text-xs text-muted-foreground">Additional growth rate on top of baseline.</p>
                         </div>
                         
-                        <div className="space-y-2">
-                            <Label>Market Sentiment</Label>
-                            <Select value={marketConditions} onValueChange={setMarketConditions}>
-                                <SelectTrigger>
-                                    <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="bullish">Bullish (High Multiples)</SelectItem>
-                                    <SelectItem value="neutral">Neutral (Avg Multiples)</SelectItem>
-                                    <SelectItem value="bearish">Bearish (Compressed)</SelectItem>
-                                </SelectContent>
-                            </Select>
+                        <div className="space-y-4">
+                            <div className="flex justify-between">
+                                <Label>Estimated Dilution</Label>
+                                <span className="text-destructive font-mono font-bold">-{dilution}%</span>
+                            </div>
+                            <Slider 
+                                defaultValue={[20]} 
+                                max={50} 
+                                step={1} 
+                                onValueChange={(v) => setDilution(v[0])}
+                                className="py-2"
+                            />
+                            <p className="text-xs text-muted-foreground">Total equity dilution from future rounds.</p>
                         </div>
 
                         <div className="space-y-4">
-                             <Label>Upcoming Milestones</Label>
-                             <div className="space-y-2">
-                                <div className="flex items-center space-x-2 border border-border/50 rounded p-2 bg-secondary/30">
-                                    <Input type="checkbox" className="size-4" defaultChecked />
-                                    <span className="text-sm">Series A Fundraise</span>
-                                </div>
-                                <div className="flex items-center space-x-2 border border-border/50 rounded p-2 bg-secondary/30">
-                                    <Input type="checkbox" className="size-4" />
-                                    <span className="text-sm">Strategic Partnership</span>
-                                </div>
-                                <div className="flex items-center space-x-2 border border-border/50 rounded p-2 bg-secondary/30">
-                                    <Input type="checkbox" className="size-4" />
-                                    <span className="text-sm">Regulatory Approval</span>
-                                </div>
-                             </div>
+                             <div className="flex justify-between">
+                                <Label>Exit Multiple</Label>
+                                <span className="text-emerald-500 font-mono font-bold">{exitMultiple}x</span>
+                            </div>
+                            <Slider 
+                                defaultValue={[10]} 
+                                max={30} 
+                                step={0.5} 
+                                onValueChange={(v) => setExitMultiple(v[0])}
+                                className="py-2"
+                            />
+                            <p className="text-xs text-muted-foreground">Revenue multiple at exit event.</p>
                         </div>
 
-                        <Button className="w-full gap-2">
-                            <PlayCircle className="size-4" /> Run Simulation
-                        </Button>
-                    </CardContent>
-                </Card>
-
-                {/* Chart */}
-                <Card className="bg-card/50 backdrop-blur-sm border-primary/10 lg:col-span-2">
-                    <CardHeader>
-                        <CardTitle>Valuation Forecast</CardTitle>
-                        <CardDescription>Baseline vs Optimistic vs Conservative scenarios (USD Millions)</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="h-[400px] w-full">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <AreaChart data={SCENARIO_DATA} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
-                                    <defs>
-                                        <linearGradient id="colorOptimistic" x1="0" y1="0" x2="0" y2="1">
-                                            <stop offset="5%" stopColor="hsl(var(--chart-2))" stopOpacity={0.3}/>
-                                            <stop offset="95%" stopColor="hsl(var(--chart-2))" stopOpacity={0}/>
-                                        </linearGradient>
-                                        <linearGradient id="colorBaseline" x1="0" y1="0" x2="0" y2="1">
-                                            <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3}/>
-                                            <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0}/>
-                                        </linearGradient>
-                                    </defs>
-                                    <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} />
-                                    <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(v) => `$${v}M`} />
-                                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
-                                    <Tooltip 
-                                        contentStyle={{ backgroundColor: 'hsl(var(--popover))', borderColor: 'hsl(var(--border))' }}
-                                        formatter={(value) => [`$${value}M`, "Valuation"]}
-                                    />
-                                    <Legend />
-                                    <Area type="monotone" dataKey="optimistic" stroke="hsl(var(--chart-2))" fillOpacity={1} fill="url(#colorOptimistic)" name="Optimistic" strokeWidth={2} />
-                                    <Area type="monotone" dataKey="baseline" stroke="hsl(var(--primary))" fillOpacity={1} fill="url(#colorBaseline)" name="Baseline" strokeWidth={2} />
-                                    <Area type="monotone" dataKey="conservative" stroke="hsl(var(--muted-foreground))" fill="transparent" strokeDasharray="5 5" name="Conservative" strokeWidth={2} />
-                                </AreaChart>
-                            </ResponsiveContainer>
+                        <div className="flex gap-3 pt-4">
+                            <Button className="flex-1 gap-2 bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20">
+                                <PlayCircle className="size-4" /> Run Sim
+                            </Button>
+                            <Button variant="outline" className="flex-1 gap-2">
+                                <RefreshCcw className="size-4" /> Reset
+                            </Button>
                         </div>
                     </CardContent>
                 </Card>
+
+                <div className="lg:col-span-2 space-y-6">
+                     {/* Chart */}
+                    <Card className="bg-card border-primary/10 relative overflow-hidden">
+                        <div 
+                            className="absolute inset-0 opacity-10 pointer-events-none" 
+                            style={{ backgroundImage: `url(${simulationBg})`, backgroundSize: 'cover', backgroundPosition: 'center' }} 
+                        />
+                        <CardHeader className="relative z-10">
+                            <CardTitle>Valuation Forecast</CardTitle>
+                            <CardDescription>5-Year Outlook under different conditions.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="relative z-10">
+                            <div className="h-[400px] w-full">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <AreaChart data={SCENARIO_DATA} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
+                                        <defs>
+                                            <linearGradient id="colorOptimistic" x1="0" y1="0" x2="0" y2="1">
+                                                <stop offset="5%" stopColor="hsl(var(--chart-2))" stopOpacity={0.3}/>
+                                                <stop offset="95%" stopColor="hsl(var(--chart-2))" stopOpacity={0}/>
+                                            </linearGradient>
+                                            <linearGradient id="colorBaseline" x1="0" y1="0" x2="0" y2="1">
+                                                <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3}/>
+                                                <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0}/>
+                                            </linearGradient>
+                                        </defs>
+                                        <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} />
+                                        <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(v) => `$${v}M`} />
+                                        <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} strokeOpacity={0.2} />
+                                        <Tooltip 
+                                            contentStyle={{ backgroundColor: 'hsl(var(--popover))', borderColor: 'hsl(var(--border))' }}
+                                            formatter={(value) => [`$${value}M`, "Valuation"]}
+                                        />
+                                        <Legend />
+                                        <Area type="monotone" dataKey="optimistic" stroke="hsl(var(--chart-2))" fillOpacity={1} fill="url(#colorOptimistic)" name="Aggressive" strokeWidth={3} />
+                                        <Area type="monotone" dataKey="baseline" stroke="hsl(var(--primary))" fillOpacity={1} fill="url(#colorBaseline)" name="Baseline" strokeWidth={3} strokeDasharray="4 4" />
+                                        <Area type="monotone" dataKey="conservative" stroke="hsl(var(--destructive))" fill="transparent" strokeDasharray="2 2" name="Conservative" strokeWidth={2} />
+                                    </AreaChart>
+                                </ResponsiveContainer>
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    {/* Quick Stats */}
+                    <Card className="bg-card/50 backdrop-blur-sm border-primary/10">
+                         <CardContent className="p-6">
+                            <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+                                <div>
+                                    <div className="text-sm font-medium text-muted-foreground mb-1">Projected Exit Value</div>
+                                    <div className="text-xs text-muted-foreground">Based on 2029 Aggressive scenario</div>
+                                </div>
+                                <div className="text-4xl font-bold font-heading text-foreground">$115M</div>
+                            </div>
+                         </CardContent>
+                    </Card>
+                </div>
             </div>
         </TabsContent>
 
