@@ -1,3 +1,4 @@
+import { useValuation } from "@/context/ValuationContext";
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -8,6 +9,8 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { SECTORS, STAGES, MOCK_COMPS } from "@/lib/constants";
+import { Switch } from "@/components/ui/switch";
+import { Checkbox } from "@/components/ui/checkbox";
 import { 
   Check, 
   Info, 
@@ -23,7 +26,9 @@ import {
   AlertTriangle,
   ExternalLink,
   Plus,
-  Table as TableIcon
+  Table as TableIcon,
+  ListChecks,
+  ShieldAlert
 } from "lucide-react";
 import {
   Dialog,
@@ -85,12 +90,40 @@ const METHODOLOGY_GUIDES = {
       "2. Calculate Terminal Value (value beyond year 5).",
       "3. Discount everything back to present value using a discount rate (WACC or high venture rate)."
     ]
+  },
+  checklist: {
+      title: "Checklist Method",
+      description: "Best for: Very early stage (Pre-Seed/Seed) to assign value to intangible assets.",
+      steps: [
+        "1. Start with a base value of $0.",
+        "2. Add fixed value for each completed milestone (e.g., +$500k for MVP).",
+        "3. Sum up all checked items to get a pre-money valuation floor."
+      ]
   }
 };
+
+const CHECKLIST_ITEMS = [
+    { id: 'team', label: 'Core Team Hired', value: 750000, description: "Full-time founders with complementary skills" },
+    { id: 'prototype', label: 'Prototype / MVP', value: 500000, description: "Working product demonstrated to users" },
+    { id: 'ip', label: 'Intellectual Property', value: 350000, description: "Provisional patents or clear IP defense" },
+    { id: 'clients', label: 'First Clients / Pilots', value: 400000, description: "Signed LOIs or paid pilots" },
+    { id: 'advisors', label: 'Strategic Advisors', value: 200000, description: "Industry veterans committed to the project" },
+    { id: 'market', label: 'Market Validation', value: 300000, description: "Customer interviews and market research completed" },
+    { id: 'incubation', label: 'Accelerator / Incubator', value: 250000, description: "Accepted into reputable program" }
+];
 
 export default function ValuationEngine() {
   const [activeTab, setActiveTab] = useState("overview");
   const [location, setLocation] = useLocation();
+
+  const { companyProfile } = useValuation(); // Get company profile for adaptive weighting
+
+  // --- NEW: Smart Weighting State ---
+  const [smartWeighting, setSmartWeighting] = useState(true);
+
+  // --- NEW: Checklist State ---
+  const [checklistItems, setChecklistItems] = useState<string[]>(['team', 'market']); // Default some checked
+  const [checklistValuation, setChecklistValuation] = useState(0);
 
   // State for VC Method
   const [vcExitYear, setVcExitYear] = useState(5);
@@ -152,6 +185,42 @@ export default function ValuationEngine() {
     setVcPostMoney(postMoney);
   }, [vcExitRevenue, vcMultiple, vcTargetRoi]);
 
+  // Calculate Checklist Method
+  useEffect(() => {
+    const total = checklistItems.reduce((acc, id) => {
+        const item = CHECKLIST_ITEMS.find(i => i.id === id);
+        return acc + (item?.value || 0);
+    }, 0);
+    setChecklistValuation(total);
+  }, [checklistItems]);
+
+  const toggleChecklistItem = (id: string) => {
+    setChecklistItems(prev => 
+        prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+    );
+  };
+
+  // --- Smart Weighting Logic ---
+  const getWeights = () => {
+    if (!smartWeighting) return { vc: 0.25, scorecard: 0.25, comps: 0.25, dcf: 0.25 }; // Even split
+
+    // Adaptive based on stage
+    switch(companyProfile.stage) {
+        case 'Idea':
+        case 'Pre-Seed':
+            return { vc: 0.10, scorecard: 0.60, comps: 0.30, dcf: 0.0 }; // Heavily qualitative
+        case 'Seed':
+             return { vc: 0.30, scorecard: 0.40, comps: 0.30, dcf: 0.0 };
+        case 'Series A':
+            return { vc: 0.40, scorecard: 0.20, comps: 0.30, dcf: 0.10 };
+        case 'Series B':
+        case 'Growth':
+            return { vc: 0.30, scorecard: 0.10, comps: 0.30, dcf: 0.30 }; // Financials matter more
+        default:
+            return { vc: 0.25, scorecard: 0.25, comps: 0.25, dcf: 0.25 };
+    }
+  };
+
   const calculateScorecard = () => {
     let totalFactor = 0;
     factors.forEach(f => {
@@ -160,6 +229,14 @@ export default function ValuationEngine() {
     });
     return scorecardBenchmark * totalFactor;
   };
+
+  const weights = getWeights();
+  const blendedValuation = (
+      (vcPostMoney * weights.vc) + 
+      (calculateScorecard() * weights.scorecard) + 
+      (12500000 * weights.comps) + // Mock comps value
+      (10500000 * weights.dcf) // Mock DCF value
+  ) / (weights.vc + weights.scorecard + weights.comps + weights.dcf);
 
   const updateFactor = (index: number, newScore: number) => {
     const newFactors = [...factors];
@@ -232,6 +309,9 @@ export default function ValuationEngine() {
                 <TabsTrigger value="dcf" className="gap-2 px-4">
                     <LineChart className="size-4" /> DCF
                 </TabsTrigger>
+                <TabsTrigger value="checklist" className="gap-2 px-4">
+                    <ListChecks className="size-4" /> Checklist
+                </TabsTrigger>
             </TabsList>
             
             <Dialog>
@@ -267,12 +347,60 @@ export default function ValuationEngine() {
                 
                 <TabsContent value="overview" className="mt-0 space-y-6 animate-in fade-in zoom-in-95 duration-300">
                     <Card className="bg-card/50 border-primary/10">
-                        <CardHeader>
-                            <CardTitle>Blended Valuation Summary</CardTitle>
-                            <CardDescription>Weighted average of all enabled methodologies</CardDescription>
+                        <CardHeader className="flex flex-row items-center justify-between pb-2">
+                            <div className="space-y-1">
+                                <CardTitle>Blended Valuation Summary</CardTitle>
+                                <CardDescription>Weighted average of all enabled methodologies</CardDescription>
+                            </div>
+                            <div className="flex items-center gap-2 bg-secondary/30 px-3 py-1.5 rounded-full border border-border/50">
+                                <Switch 
+                                    id="smart-weighting" 
+                                    checked={smartWeighting}
+                                    onCheckedChange={setSmartWeighting}
+                                />
+                                <Label htmlFor="smart-weighting" className="text-xs cursor-pointer font-medium flex items-center gap-1">
+                                    Adaptive Weighting
+                                    <Brain className="size-3 text-primary" />
+                                </Label>
+                            </div>
                         </CardHeader>
                         <CardContent className="space-y-8">
-                             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            {/* --- Top Level Summary --- */}
+                            <div className="flex flex-col md:flex-row gap-6 items-center bg-primary/5 p-6 rounded-xl border border-primary/10">
+                                <div className="flex-1">
+                                    <div className="text-sm text-muted-foreground uppercase tracking-wider font-semibold mb-1">Estimated Pre-Money Valuation</div>
+                                    <div className="text-4xl font-bold font-heading text-primary">${(blendedValuation/1000000).toFixed(2)}M</div>
+                                    <div className="flex items-center gap-2 mt-2">
+                                        <Badge variant="outline" className="bg-background">
+                                            Stage: {companyProfile.stage}
+                                        </Badge>
+                                        <span className="text-xs text-muted-foreground">
+                                            {smartWeighting ? "Weights optimized for your stage" : "Standard equal weighting"}
+                                        </span>
+                                    </div>
+                                </div>
+                                <div className="w-px h-16 bg-border/50 hidden md:block" />
+                                <div className="flex gap-4 text-sm">
+                                    <div className="text-center">
+                                        <div className="font-bold">{smartWeighting ? (weights.scorecard * 100).toFixed(0) : 25}%</div>
+                                        <div className="text-xs text-muted-foreground">Scorecard</div>
+                                    </div>
+                                    <div className="text-center">
+                                        <div className="font-bold">{smartWeighting ? (weights.vc * 100).toFixed(0) : 25}%</div>
+                                        <div className="text-xs text-muted-foreground">VC Method</div>
+                                    </div>
+                                    <div className="text-center">
+                                        <div className="font-bold">{smartWeighting ? (weights.comps * 100).toFixed(0) : 25}%</div>
+                                        <div className="text-xs text-muted-foreground">Comps</div>
+                                    </div>
+                                     <div className="text-center">
+                                        <div className="font-bold">{smartWeighting ? (weights.dcf * 100).toFixed(0) : 25}%</div>
+                                        <div className="text-xs text-muted-foreground">DCF</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                             <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                                 <div className="bg-secondary/30 p-4 rounded-lg border border-border/50 relative overflow-hidden group hover:bg-secondary/50 transition-colors">
                                     <div className="text-xs text-muted-foreground mb-1">VC Method</div>
                                     <div className="text-lg font-bold font-mono">${(vcPostMoney/1000000).toFixed(1)}M</div>
@@ -293,22 +421,54 @@ export default function ValuationEngine() {
                                     <div className="text-lg font-bold font-mono">$10.5M</div>
                                     <div className="absolute bottom-0 left-0 h-1 bg-yellow-500 transition-all duration-500 group-hover:h-1.5" style={{ width: '40%' }} />
                                 </div>
+                                <div className="bg-secondary/30 p-4 rounded-lg border border-border/50 relative overflow-hidden group hover:bg-secondary/50 transition-colors">
+                                    <div className="text-xs text-muted-foreground mb-1">Checklist</div>
+                                    <div className="text-lg font-bold font-mono">${(checklistValuation/1000000).toFixed(1)}M</div>
+                                    <div className="absolute bottom-0 left-0 h-1 bg-blue-500 transition-all duration-500 group-hover:h-1.5" style={{ width: '60%' }} />
+                                </div>
                              </div>
 
-                             <div className="space-y-4">
-                                <h3 className="font-medium flex items-center gap-2">
-                                    <Brain className="size-4 text-primary" /> 
-                                    Engine Insight
-                                </h3>
-                                <div className="bg-primary/5 border border-primary/10 rounded-xl p-6 text-sm leading-relaxed text-muted-foreground">
-                                    The wide spread between your <strong>Scorecard Valuation (${(calculateScorecard()/1000000).toFixed(1)}M)</strong> and 
-                                    <strong> VC Method Valuation (${(vcPostMoney/1000000).toFixed(1)}M)</strong> suggests that while your qualitative factors (Team, Market) are strong, 
-                                    your financial projections might be conservative relative to the valuation you are seeking.
-                                    <br/><br/>
-                                    Investors may view this as a "premium team in a developing market." Consider adjusting your exit revenue targets if you believe the market opportunity is larger.
+                             {/* --- Defensibility Risk Radar --- */}
+                             <div className="grid md:grid-cols-2 gap-6">
+                                <div className="space-y-4">
+                                    <h3 className="font-medium flex items-center gap-2">
+                                        <ShieldAlert className="size-4 text-orange-500" /> 
+                                        Defensibility Risk Radar
+                                    </h3>
+                                    <div className="space-y-3">
+                                        <div className="flex items-center justify-between text-sm p-3 bg-secondary/20 rounded border border-border/50">
+                                            <span>Team Completeness</span>
+                                            <Badge variant="outline" className="bg-emerald-500/10 text-emerald-500 border-emerald-500/20">High Defensibility</Badge>
+                                        </div>
+                                        <div className="flex items-center justify-between text-sm p-3 bg-secondary/20 rounded border border-border/50">
+                                            <span>IP Protection</span>
+                                            <Badge variant="outline" className="bg-yellow-500/10 text-yellow-500 border-yellow-500/20">Medium Risk</Badge>
+                                        </div>
+                                        <div className="flex items-center justify-between text-sm p-3 bg-secondary/20 rounded border border-border/50">
+                                            <span>Revenue Consistency</span>
+                                            <Badge variant="outline" className="bg-red-500/10 text-red-500 border-red-500/20">High Risk</Badge>
+                                        </div>
+                                    </div>
                                 </div>
+
+                                <div className="space-y-4">
+                                    <h3 className="font-medium flex items-center gap-2">
+                                        <Brain className="size-4 text-primary" /> 
+                                        Engine Insight
+                                    </h3>
+                                    <div className="bg-primary/5 border border-primary/10 rounded-xl p-6 text-sm leading-relaxed text-muted-foreground h-[164px]">
+                                        The wide spread between your <strong>Scorecard Valuation (${(calculateScorecard()/1000000).toFixed(1)}M)</strong> and 
+                                        <strong> VC Method Valuation (${(vcPostMoney/1000000).toFixed(1)}M)</strong> suggests that while your qualitative factors (Team, Market) are strong, 
+                                        your financial projections might be conservative.
+                                        <br/><br/>
+                                        Investors may view this as a "premium team in a developing market."
+                                    </div>
+                                </div>
+                             </div>
+                             
+                             <div className="flex justify-end">
                                 <Link href="/scenarios">
-                                    <Button className="w-full mt-4 gap-2" variant="outline">
+                                    <Button className="gap-2" variant="outline">
                                         Model Future Scenarios <ArrowRight className="size-4" />
                                     </Button>
                                 </Link>

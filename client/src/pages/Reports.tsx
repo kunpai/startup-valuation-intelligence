@@ -90,7 +90,9 @@ export default function Reports() {
                     <p className="text-sm text-muted-foreground">Best for: Due Diligence Data Room, Lead Investor meetings.</p>
                 </CardContent>
                 <CardFooter>
-                    <Button variant="outline" className="w-full group-hover:bg-secondary transition-colors">Generate Now</Button>
+                    <Link href="/reports/deal-room" className="w-full">
+                        <Button variant="outline" className="w-full group-hover:bg-secondary transition-colors">Generate Now</Button>
+                    </Link>
                 </CardFooter>
             </Card>
         </Link>

@@ -10,6 +10,7 @@ import MarketComps from "@/pages/MarketComps";
 import Scenarios from "@/pages/Scenarios";
 import Reports from "@/pages/Reports";
 import ReportDetail from "@/pages/ReportDetail";
+import DealRoom from "@/pages/DealRoom";
 import Onboarding from "@/pages/Onboarding";
 import { ValuationProvider, useValuation } from "@/context/ValuationContext";
 
@@ -29,6 +30,7 @@ function Router() {
                 <Route path="/comparables" component={MarketComps} />
                 <Route path="/scenarios" component={Scenarios} />
                 <Route path="/reports" component={Reports} />
+                <Route path="/reports/deal-room" component={DealRoom} />
                 <Route path="/reports/:id" component={ReportDetail} />
                 <Route component={NotFound} />
             </Switch>
