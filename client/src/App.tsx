@@ -14,6 +14,7 @@ import DealRoom from "@/pages/DealRoom";
 import Onboarding from "@/pages/Onboarding";
 import PlatformOverview from "@/pages/PlatformOverview";
 import { ValuationProvider, useValuation } from "@/context/ValuationContext";
+import { ThemeProvider } from "@/components/theme-provider";
 
 function Router() {
   const { isDemoMode } = useValuation();
@@ -45,11 +46,13 @@ function Router() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <ValuationProvider>
-        <TooltipProvider>
-          <Router />
-        </TooltipProvider>
-      </ValuationProvider>
+      <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
+        <ValuationProvider>
+            <TooltipProvider>
+            <Router />
+            </TooltipProvider>
+        </ValuationProvider>
+      </ThemeProvider>
     </QueryClientProvider>
   );
 }

@@ -17,19 +17,22 @@ import {
   CheckCircle2,
   Users,
   Lightbulb,
-  TrendingUp
+  TrendingUp,
+  Sparkles
 } from "lucide-react";
+import methodologyImage from '@assets/generated_images/methodology_diagram_blending_four_colors.png';
+import miraInterfaceImage from '@assets/generated_images/ai_financial_assistant_interface.png';
 
 export default function PlatformOverview() {
   return (
     <div className="space-y-12 pb-20 max-w-6xl mx-auto">
       
       {/* Hero Section */}
-      <section className="text-center space-y-6 pt-10 pb-6 animate-in fade-in slide-in-from-top-8 duration-700">
-        <Badge variant="secondary" className="px-4 py-1.5 text-sm rounded-full mb-4">
+      <section className="text-center space-y-6 pt-10 pb-6 animate-in fade-in slide-in-from-top-8 duration-700 relative">
+        <Badge variant="secondary" className="px-4 py-1.5 text-sm rounded-full mb-4 border-primary/20 bg-primary/10 text-primary">
           v2.0 Release • Intelligent Valuation Engine
         </Badge>
-        <h1 className="text-5xl md:text-6xl font-bold font-heading tracking-tight text-foreground max-w-4xl mx-auto leading-tight">
+        <h1 className="text-5xl md:text-7xl font-bold font-heading tracking-tight text-foreground max-w-4xl mx-auto leading-tight">
           The Operating System for <br/>
           <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-blue-600">Startup Valuation</span>
         </h1>
@@ -38,12 +41,12 @@ export default function PlatformOverview() {
         </p>
         <div className="flex items-center justify-center gap-4 pt-4">
             <Link href="/calculator">
-                <Button size="lg" className="h-12 px-8 text-lg gap-2 shadow-xl shadow-primary/20 hover:shadow-primary/40 transition-all">
+                <Button size="lg" className="h-12 px-8 text-lg gap-2 shadow-xl shadow-primary/20 hover:shadow-primary/40 transition-all rounded-full">
                     Start Valuation <ArrowRight className="size-5" />
                 </Button>
             </Link>
             <Link href="/reports/deal-room">
-                <Button size="lg" variant="outline" className="h-12 px-8 text-lg gap-2">
+                <Button size="lg" variant="outline" className="h-12 px-8 text-lg gap-2 rounded-full bg-background/50 backdrop-blur border-primary/20 hover:bg-primary/5">
                     View Sample Report
                 </Button>
             </Link>
@@ -80,6 +83,42 @@ export default function PlatformOverview() {
 
       <Separator className="bg-border/50" />
 
+      {/* Mira AI Section */}
+      <section className="grid lg:grid-cols-2 gap-12 items-center bg-card/30 rounded-3xl p-8 border border-white/5">
+        <div className="relative order-2 lg:order-1 group">
+             <div className="absolute inset-0 bg-gradient-to-tr from-cyan-500/20 to-blue-500/20 blur-2xl rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
+            <img 
+                src={miraInterfaceImage} 
+                alt="Mira AI Assistant" 
+                className="rounded-xl shadow-2xl border border-white/10 relative z-10 w-full object-cover h-[400px] hover:scale-[1.02] transition-transform duration-500"
+            />
+        </div>
+        <div className="space-y-6 order-1 lg:order-2">
+             <Badge className="bg-emerald-500/10 text-emerald-500 border-emerald-500/20">New Feature</Badge>
+            <h2 className="text-3xl md:text-4xl font-bold font-heading">Meet Mira, Your AI CFO</h2>
+            <p className="text-lg text-muted-foreground">
+                Don't navigate fundraising alone. Mira is an always-on AI advisor that understands your specific financial context.
+            </p>
+            <ul className="space-y-3">
+                <li className="flex gap-3 items-start">
+                    <CheckCircle2 className="size-5 text-emerald-500 mt-1" />
+                    <span><strong>Context Aware:</strong> Knows if you're working on market sizing or revenue projections and offers specific advice.</span>
+                </li>
+                <li className="flex gap-3 items-start">
+                    <CheckCircle2 className="size-5 text-emerald-500 mt-1" />
+                    <span><strong>Valuation Optimization:</strong> Suggests actionable levers to increase your valuation before you pitch.</span>
+                </li>
+                <li className="flex gap-3 items-start">
+                    <CheckCircle2 className="size-5 text-emerald-500 mt-1" />
+                    <span><strong>24/7 Availability:</strong> Get instant answers to complex financial questions.</span>
+                </li>
+            </ul>
+            <Button className="gap-2 rounded-full" onClick={() => document.querySelector<HTMLButtonElement>('[data-tour="mira-toggle"] button')?.click()}>
+                <Sparkles className="size-4" /> Chat with Mira
+            </Button>
+        </div>
+      </section>
+
       {/* Methodology Section */}
       <section className="grid lg:grid-cols-2 gap-12 items-center">
         <div className="space-y-6">
@@ -111,59 +150,24 @@ export default function PlatformOverview() {
                 />
             </div>
         </div>
-        <div className="relative">
-            <div className="absolute inset-0 bg-gradient-to-tr from-primary/20 to-blue-500/20 blur-3xl rounded-full opacity-50" />
-            <Card className="relative border-primary/10 shadow-2xl bg-card/80 backdrop-blur">
-                <CardHeader>
-                    <CardTitle>Weighted Blended Average</CardTitle>
-                    <CardDescription>How we calculate your final number</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                    <div className="space-y-2">
-                        <div className="flex justify-between text-sm font-medium">
-                            <span>Scorecard (Qualitative)</span>
-                            <span>30%</span>
+        <div className="relative group">
+             <div className="absolute inset-0 bg-gradient-to-tr from-primary/20 to-purple-500/20 blur-3xl rounded-full opacity-50 group-hover:opacity-75 transition-opacity" />
+             <div className="relative rounded-2xl overflow-hidden shadow-2xl border border-white/10 bg-card/50 backdrop-blur-sm">
+                 <img 
+                    src={methodologyImage} 
+                    alt="Valuation Methodology Diagram" 
+                    className="w-full object-cover"
+                />
+                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-background to-transparent p-6 pt-20">
+                    <div className="flex justify-between items-end">
+                        <div>
+                             <p className="text-sm font-medium text-muted-foreground uppercase tracking-widest">Calculated Result</p>
+                             <p className="text-3xl font-bold text-foreground">Weighted Average</p>
                         </div>
-                        <div className="h-2 bg-secondary rounded-full overflow-hidden">
-                            <div className="h-full bg-blue-500 w-[30%]" />
-                        </div>
+                        <Badge variant="outline" className="text-lg px-4 py-1 border-primary/50 text-primary bg-primary/5">Defensible</Badge>
                     </div>
-                    <div className="space-y-2">
-                        <div className="flex justify-between text-sm font-medium">
-                            <span>VC Method (Future)</span>
-                            <span>40%</span>
-                        </div>
-                        <div className="h-2 bg-secondary rounded-full overflow-hidden">
-                            <div className="h-full bg-primary w-[40%]" />
-                        </div>
-                    </div>
-                    <div className="space-y-2">
-                        <div className="flex justify-between text-sm font-medium">
-                            <span>Comps (Market)</span>
-                            <span>20%</span>
-                        </div>
-                        <div className="h-2 bg-secondary rounded-full overflow-hidden">
-                            <div className="h-full bg-purple-500 w-[20%]" />
-                        </div>
-                    </div>
-                    <div className="space-y-2">
-                        <div className="flex justify-between text-sm font-medium">
-                            <span>DCF (Intrinsic)</span>
-                            <span>10%</span>
-                        </div>
-                        <div className="h-2 bg-secondary rounded-full overflow-hidden">
-                            <div className="h-full bg-emerald-500 w-[10%]" />
-                        </div>
-                    </div>
-
-                    <div className="mt-6 p-4 bg-primary/5 rounded-lg border border-primary/10">
-                        <div className="text-center">
-                            <div className="text-sm text-muted-foreground uppercase tracking-wider font-semibold mb-1">Final Valuation</div>
-                            <div className="text-3xl font-bold font-heading text-primary">$12.5M</div>
-                        </div>
-                    </div>
-                </CardContent>
-            </Card>
+                </div>
+             </div>
         </div>
       </section>
 

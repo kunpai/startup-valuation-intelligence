@@ -6,6 +6,7 @@ import { TourGuide } from "./TourGuide";
 import { Button } from "@/components/ui/button";
 import { PlayCircle } from "lucide-react";
 import { VirtualCFO } from "@/components/dashboard/VirtualCFO";
+import { ModeToggle } from "@/components/ui/mode-toggle";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [runTour, setRunTour] = React.useState(false);
@@ -52,6 +53,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 <PlayCircle className="size-4" />
                 Start Tour
                </Button>
+               <ModeToggle />
             </div>
           </header>
           
