@@ -4,6 +4,13 @@ import { storage } from "./storage";
 import { insertCompanySchema, insertValuationSnapshotSchema, insertScenarioSchema, insertComparableSchema } from "@shared/schema";
 import { registerMiraRoutes } from "./mira";
 import { calculateValuation, type ValuationInput } from "./valuation";
+import { isAuthenticated } from "./replit_integrations/auth";
+
+// Helper to get userId from authenticated request
+function getUserId(req: Express.Request): string {
+  const user = req.user as any;
+  return user?.claims?.sub || "";
+}
 
 export async function registerRoutes(
   httpServer: Server,
@@ -13,12 +20,13 @@ export async function registerRoutes(
   // Register Mira AI routes
   registerMiraRoutes(app);
   
-  // ==================== Companies ====================
+  // ==================== Companies (authenticated, user-scoped) ====================
   
-  // Get all companies
-  app.get("/api/companies", async (req, res) => {
+  // Get all companies for current user
+  app.get("/api/companies", isAuthenticated, async (req, res) => {
     try {
-      const companies = await storage.getAllCompanies();
+      const userId = getUserId(req);
+      const companies = await storage.getCompaniesByUser(userId);
       res.json(companies);
     } catch (error) {
       console.error("Error fetching companies:", error);
@@ -26,10 +34,11 @@ export async function registerRoutes(
     }
   });
   
-  // Get single company
-  app.get("/api/companies/:id", async (req, res) => {
+  // Get single company (user-scoped)
+  app.get("/api/companies/:id", isAuthenticated, async (req, res) => {
     try {
-      const company = await storage.getCompany(req.params.id);
+      const userId = getUserId(req);
+      const company = await storage.getCompany(req.params.id, userId);
       if (!company) {
         return res.status(404).json({ error: "Company not found" });
       }
@@ -40,10 +49,14 @@ export async function registerRoutes(
     }
   });
   
-  // Create company
-  app.post("/api/companies", async (req, res) => {
+  // Create company (assign to current user)
+  app.post("/api/companies", isAuthenticated, async (req, res) => {
     try {
-      const validatedData = insertCompanySchema.parse(req.body);
+      const userId = getUserId(req);
+      const validatedData = insertCompanySchema.parse({
+        ...req.body,
+        userId
+      });
       const company = await storage.createCompany(validatedData);
       res.status(201).json(company);
     } catch (error) {
@@ -52,10 +65,11 @@ export async function registerRoutes(
     }
   });
   
-  // Update company
-  app.patch("/api/companies/:id", async (req, res) => {
+  // Update company (user-scoped)
+  app.patch("/api/companies/:id", isAuthenticated, async (req, res) => {
     try {
-      const company = await storage.updateCompany(req.params.id, req.body);
+      const userId = getUserId(req);
+      const company = await storage.updateCompany(req.params.id, userId, req.body);
       if (!company) {
         return res.status(404).json({ error: "Company not found" });
       }
@@ -66,10 +80,11 @@ export async function registerRoutes(
     }
   });
   
-  // Delete company
-  app.delete("/api/companies/:id", async (req, res) => {
+  // Delete company (user-scoped)
+  app.delete("/api/companies/:id", isAuthenticated, async (req, res) => {
     try {
-      const success = await storage.deleteCompany(req.params.id);
+      const userId = getUserId(req);
+      const success = await storage.deleteCompany(req.params.id, userId);
       if (!success) {
         return res.status(404).json({ error: "Company not found" });
       }
@@ -83,8 +98,15 @@ export async function registerRoutes(
   // ==================== Valuation Snapshots ====================
   
   // Get snapshots for a company
-  app.get("/api/companies/:companyId/snapshots", async (req, res) => {
+  app.get("/api/companies/:companyId/snapshots", isAuthenticated, async (req, res) => {
     try {
+      // First verify user owns this company
+      const userId = getUserId(req);
+      const company = await storage.getCompany(req.params.companyId, userId);
+      if (!company) {
+        return res.status(404).json({ error: "Company not found" });
+      }
+      
       const snapshots = await storage.getSnapshotsByCompany(req.params.companyId);
       res.json(snapshots);
     } catch (error) {
@@ -94,12 +116,20 @@ export async function registerRoutes(
   });
   
   // Get single snapshot
-  app.get("/api/snapshots/:id", async (req, res) => {
+  app.get("/api/snapshots/:id", isAuthenticated, async (req, res) => {
     try {
       const snapshot = await storage.getSnapshot(req.params.id);
       if (!snapshot) {
         return res.status(404).json({ error: "Snapshot not found" });
       }
+      
+      // Verify user owns the company this snapshot belongs to
+      const userId = getUserId(req);
+      const company = await storage.getCompany(snapshot.companyId, userId);
+      if (!company) {
+        return res.status(404).json({ error: "Snapshot not found" });
+      }
+      
       res.json(snapshot);
     } catch (error) {
       console.error("Error fetching snapshot:", error);
@@ -108,8 +138,15 @@ export async function registerRoutes(
   });
   
   // Create snapshot
-  app.post("/api/snapshots", async (req, res) => {
+  app.post("/api/snapshots", isAuthenticated, async (req, res) => {
     try {
+      // Verify user owns the company
+      const userId = getUserId(req);
+      const company = await storage.getCompany(req.body.companyId, userId);
+      if (!company) {
+        return res.status(404).json({ error: "Company not found" });
+      }
+      
       const validatedData = insertValuationSnapshotSchema.parse(req.body);
       const snapshot = await storage.createSnapshot(validatedData);
       res.status(201).json(snapshot);
@@ -120,8 +157,20 @@ export async function registerRoutes(
   });
   
   // Delete snapshot
-  app.delete("/api/snapshots/:id", async (req, res) => {
+  app.delete("/api/snapshots/:id", isAuthenticated, async (req, res) => {
     try {
+      const snapshot = await storage.getSnapshot(req.params.id);
+      if (!snapshot) {
+        return res.status(404).json({ error: "Snapshot not found" });
+      }
+      
+      // Verify user owns the company
+      const userId = getUserId(req);
+      const company = await storage.getCompany(snapshot.companyId, userId);
+      if (!company) {
+        return res.status(404).json({ error: "Snapshot not found" });
+      }
+      
       const success = await storage.deleteSnapshot(req.params.id);
       if (!success) {
         return res.status(404).json({ error: "Snapshot not found" });
@@ -136,8 +185,14 @@ export async function registerRoutes(
   // ==================== Scenarios (company-scoped) ====================
   
   // Get scenarios for a company
-  app.get("/api/companies/:companyId/scenarios", async (req, res) => {
+  app.get("/api/companies/:companyId/scenarios", isAuthenticated, async (req, res) => {
     try {
+      const userId = getUserId(req);
+      const company = await storage.getCompany(req.params.companyId, userId);
+      if (!company) {
+        return res.status(404).json({ error: "Company not found" });
+      }
+      
       const scenarios = await storage.getScenariosByCompany(req.params.companyId);
       res.json(scenarios);
     } catch (error) {
@@ -147,8 +202,14 @@ export async function registerRoutes(
   });
   
   // Create scenario for a company
-  app.post("/api/companies/:companyId/scenarios", async (req, res) => {
+  app.post("/api/companies/:companyId/scenarios", isAuthenticated, async (req, res) => {
     try {
+      const userId = getUserId(req);
+      const company = await storage.getCompany(req.params.companyId, userId);
+      if (!company) {
+        return res.status(404).json({ error: "Company not found" });
+      }
+      
       const validatedData = insertScenarioSchema.parse({
         ...req.body,
         companyId: req.params.companyId
@@ -162,8 +223,14 @@ export async function registerRoutes(
   });
   
   // Update scenario for a company
-  app.patch("/api/companies/:companyId/scenarios/:id", async (req, res) => {
+  app.patch("/api/companies/:companyId/scenarios/:id", isAuthenticated, async (req, res) => {
     try {
+      const userId = getUserId(req);
+      const company = await storage.getCompany(req.params.companyId, userId);
+      if (!company) {
+        return res.status(404).json({ error: "Company not found" });
+      }
+      
       const scenario = await storage.updateScenario(req.params.id, req.body);
       if (!scenario) {
         return res.status(404).json({ error: "Scenario not found" });
@@ -176,8 +243,14 @@ export async function registerRoutes(
   });
   
   // Delete scenario for a company
-  app.delete("/api/companies/:companyId/scenarios/:id", async (req, res) => {
+  app.delete("/api/companies/:companyId/scenarios/:id", isAuthenticated, async (req, res) => {
     try {
+      const userId = getUserId(req);
+      const company = await storage.getCompany(req.params.companyId, userId);
+      if (!company) {
+        return res.status(404).json({ error: "Company not found" });
+      }
+      
       const success = await storage.deleteScenario(req.params.id);
       if (!success) {
         return res.status(404).json({ error: "Scenario not found" });
@@ -192,8 +265,14 @@ export async function registerRoutes(
   // ==================== Comparables ====================
   
   // Get comparables for a company (company-scoped)
-  app.get("/api/companies/:companyId/comparables", async (req, res) => {
+  app.get("/api/companies/:companyId/comparables", isAuthenticated, async (req, res) => {
     try {
+      const userId = getUserId(req);
+      const company = await storage.getCompany(req.params.companyId, userId);
+      if (!company) {
+        return res.status(404).json({ error: "Company not found" });
+      }
+      
       const comparables = await storage.getComparablesByCompany(req.params.companyId);
       res.json(comparables);
     } catch (error) {
@@ -203,8 +282,14 @@ export async function registerRoutes(
   });
   
   // Create comparable for a company (company-scoped)
-  app.post("/api/companies/:companyId/comparables", async (req, res) => {
+  app.post("/api/companies/:companyId/comparables", isAuthenticated, async (req, res) => {
     try {
+      const userId = getUserId(req);
+      const company = await storage.getCompany(req.params.companyId, userId);
+      if (!company) {
+        return res.status(404).json({ error: "Company not found" });
+      }
+      
       const validatedData = insertComparableSchema.parse({
         ...req.body,
         companyId: req.params.companyId
@@ -218,8 +303,14 @@ export async function registerRoutes(
   });
   
   // Delete comparable for a company (company-scoped)
-  app.delete("/api/companies/:companyId/comparables/:id", async (req, res) => {
+  app.delete("/api/companies/:companyId/comparables/:id", isAuthenticated, async (req, res) => {
     try {
+      const userId = getUserId(req);
+      const company = await storage.getCompany(req.params.companyId, userId);
+      if (!company) {
+        return res.status(404).json({ error: "Company not found" });
+      }
+      
       const success = await storage.deleteComparable(req.params.id);
       if (!success) {
         return res.status(404).json({ error: "Comparable not found" });
@@ -233,8 +324,8 @@ export async function registerRoutes(
   
   // ==================== Valuation Calculation ====================
   
-  // Calculate valuation with real formulas
-  app.post("/api/calculate-valuation", async (req, res) => {
+  // Calculate valuation with real formulas (authenticated but not user-scoped - pure calculation)
+  app.post("/api/calculate-valuation", isAuthenticated, async (req, res) => {
     try {
       const input: ValuationInput = req.body;
       const result = calculateValuation(input);

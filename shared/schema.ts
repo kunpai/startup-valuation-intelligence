@@ -3,24 +3,14 @@ import { pgTable, text, varchar, integer, real, timestamp, jsonb } from "drizzle
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-// Users table (for future auth)
-export const users = pgTable("users", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  username: text("username").notNull().unique(),
-  password: text("password").notNull(),
-});
+// Re-export auth models first (required for Replit Auth)
+// Note: The auth models define the users and sessions tables
+export * from "./models/auth";
 
-export const insertUserSchema = createInsertSchema(users).pick({
-  username: true,
-  password: true,
-});
-
-export type InsertUser = z.infer<typeof insertUserSchema>;
-export type User = typeof users.$inferSelect;
-
-// Companies table
+// Companies table - scoped to authenticated users
 export const companies = pgTable("companies", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull(), // Links company to authenticated user
   name: text("name").notNull(),
   sector: text("sector").notNull(),
   stage: text("stage").notNull(),
@@ -132,9 +122,6 @@ export const insertScenarioSchema = createInsertSchema(scenarios).omit({
 
 export type InsertScenario = z.infer<typeof insertScenarioSchema>;
 export type Scenario = typeof scenarios.$inferSelect;
-
-// Re-export auth models (required for Replit Auth)
-export * from "./models/auth";
 
 // Re-export chat models
 export * from "./models/chat";

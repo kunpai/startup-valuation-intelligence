@@ -1,12 +1,9 @@
 // Blueprint reference: javascript_database
 import { 
-  users, 
   companies,
   valuationSnapshots,
   scenarios,
   comparables,
-  type User, 
-  type InsertUser,
   type Company,
   type InsertCompany,
   type ValuationSnapshot,
@@ -17,20 +14,15 @@ import {
   type InsertComparable
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, and } from "drizzle-orm";
 
 export interface IStorage {
-  // Users
-  getUser(id: string): Promise<User | undefined>;
-  getUserByUsername(username: string): Promise<User | undefined>;
-  createUser(user: InsertUser): Promise<User>;
-  
-  // Companies
-  getCompany(id: string): Promise<Company | undefined>;
-  getAllCompanies(): Promise<Company[]>;
+  // Companies (scoped by userId)
+  getCompany(id: string, userId: string): Promise<Company | undefined>;
+  getCompaniesByUser(userId: string): Promise<Company[]>;
   createCompany(company: InsertCompany): Promise<Company>;
-  updateCompany(id: string, company: Partial<InsertCompany>): Promise<Company | undefined>;
-  deleteCompany(id: string): Promise<boolean>;
+  updateCompany(id: string, userId: string, company: Partial<InsertCompany>): Promise<Company | undefined>;
+  deleteCompany(id: string, userId: string): Promise<boolean>;
   
   // Valuation Snapshots
   getSnapshot(id: string): Promise<ValuationSnapshot | undefined>;
@@ -55,33 +47,21 @@ export interface IStorage {
 }
 
 export class DatabaseStorage implements IStorage {
-  // Users
-  async getUser(id: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.id, id));
-    return user || undefined;
-  }
-
-  async getUserByUsername(username: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.username, username));
-    return user || undefined;
-  }
-
-  async createUser(insertUser: InsertUser): Promise<User> {
-    const [user] = await db
-      .insert(users)
-      .values(insertUser)
-      .returning();
-    return user;
-  }
-  
-  // Companies
-  async getCompany(id: string): Promise<Company | undefined> {
-    const [company] = await db.select().from(companies).where(eq(companies.id, id));
+  // Companies (scoped by userId)
+  async getCompany(id: string, userId: string): Promise<Company | undefined> {
+    const [company] = await db
+      .select()
+      .from(companies)
+      .where(and(eq(companies.id, id), eq(companies.userId, userId)));
     return company || undefined;
   }
   
-  async getAllCompanies(): Promise<Company[]> {
-    return await db.select().from(companies).orderBy(desc(companies.createdAt));
+  async getCompaniesByUser(userId: string): Promise<Company[]> {
+    return await db
+      .select()
+      .from(companies)
+      .where(eq(companies.userId, userId))
+      .orderBy(desc(companies.createdAt));
   }
   
   async createCompany(insertCompany: InsertCompany): Promise<Company> {
@@ -92,17 +72,19 @@ export class DatabaseStorage implements IStorage {
     return company;
   }
   
-  async updateCompany(id: string, updateData: Partial<InsertCompany>): Promise<Company | undefined> {
+  async updateCompany(id: string, userId: string, updateData: Partial<InsertCompany>): Promise<Company | undefined> {
     const [company] = await db
       .update(companies)
       .set({ ...updateData, updatedAt: new Date() })
-      .where(eq(companies.id, id))
+      .where(and(eq(companies.id, id), eq(companies.userId, userId)))
       .returning();
     return company || undefined;
   }
   
-  async deleteCompany(id: string): Promise<boolean> {
-    const result = await db.delete(companies).where(eq(companies.id, id));
+  async deleteCompany(id: string, userId: string): Promise<boolean> {
+    const result = await db
+      .delete(companies)
+      .where(and(eq(companies.id, id), eq(companies.userId, userId)));
     return result.rowCount ? result.rowCount > 0 : false;
   }
   

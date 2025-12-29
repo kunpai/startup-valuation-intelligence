@@ -13,21 +13,22 @@ import ReportDetail from "@/pages/ReportDetail";
 import DealRoom from "@/pages/DealRoom";
 import Onboarding from "@/pages/Onboarding";
 import PlatformOverview from "@/pages/PlatformOverview";
+import Landing from "@/pages/Landing";
 import { ValuationProvider, useValuation } from "@/context/ValuationContext";
 import { ThemeProvider } from "@/components/theme-provider";
+import { useAuth } from "@/hooks/use-auth";
+import { Loader2 } from "lucide-react";
 
-function Router() {
+function AuthenticatedRouter() {
   const { isDemoMode, currentCompanyId } = useValuation();
 
   return (
     <Switch>
       <Route path="/onboarding" component={Onboarding} />
       
-      {/* Protect other routes with Layout */}
       <Route>
          <AppLayout>
             <Switch>
-                {/* Show guide page as default for new users (demo mode with no company) */}
                 <Route path="/" component={isDemoMode && !currentCompanyId ? PlatformOverview : Dashboard} />
                 <Route path="/guide" component={PlatformOverview} />
                 <Route path="/calculator" component={Calculator} />
@@ -44,15 +45,35 @@ function Router() {
   );
 }
 
+function Router() {
+  const { user, isLoading, isAuthenticated } = useAuth();
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return <Landing />;
+  }
+
+  return (
+    <ValuationProvider>
+      <AuthenticatedRouter />
+    </ValuationProvider>
+  );
+}
+
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
-        <ValuationProvider>
-            <TooltipProvider>
-            <Router />
-            </TooltipProvider>
-        </ValuationProvider>
+        <TooltipProvider>
+          <Router />
+        </TooltipProvider>
       </ThemeProvider>
     </QueryClientProvider>
   );
