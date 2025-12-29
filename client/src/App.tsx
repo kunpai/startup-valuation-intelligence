@@ -10,29 +10,42 @@ import MarketComps from "@/pages/MarketComps";
 import Scenarios from "@/pages/Scenarios";
 import Reports from "@/pages/Reports";
 import ReportDetail from "@/pages/ReportDetail";
+import Onboarding from "@/pages/Onboarding";
+import { ValuationProvider, useValuation } from "@/context/ValuationContext";
 
 function Router() {
+  const { isDemoMode } = useValuation();
+
   return (
-    <AppLayout>
-      <Switch>
-        <Route path="/" component={Dashboard} />
-        <Route path="/calculator" component={Calculator} />
-        <Route path="/comparables" component={MarketComps} />
-        <Route path="/scenarios" component={Scenarios} />
-        <Route path="/reports" component={Reports} />
-        <Route path="/reports/:id" component={ReportDetail} />
-        <Route component={NotFound} />
-      </Switch>
-    </AppLayout>
+    <Switch>
+      <Route path="/onboarding" component={Onboarding} />
+      
+      {/* Protect other routes with Layout */}
+      <Route path="/:rest*">
+         <AppLayout>
+            <Switch>
+                <Route path="/" component={Dashboard} />
+                <Route path="/calculator" component={Calculator} />
+                <Route path="/comparables" component={MarketComps} />
+                <Route path="/scenarios" component={Scenarios} />
+                <Route path="/reports" component={Reports} />
+                <Route path="/reports/:id" component={ReportDetail} />
+                <Route component={NotFound} />
+            </Switch>
+         </AppLayout>
+      </Route>
+    </Switch>
   );
 }
 
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Router />
-      </TooltipProvider>
+      <ValuationProvider>
+        <TooltipProvider>
+          <Router />
+        </TooltipProvider>
+      </ValuationProvider>
     </QueryClientProvider>
   );
 }

@@ -20,11 +20,54 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { MOCK_METHODOLOGY_BREAKDOWN, MOCK_VALUATION_HISTORY, MOCK_MILESTONES } from "@/lib/constants";
 import { SimulationSheet } from "@/components/dashboard/SimulationSheet";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
+import { useValuation } from "@/context/ValuationContext";
+import { useEffect } from "react";
 
 export default function Dashboard() {
+  const { isDemoMode, companyProfile, financials } = useValuation();
+  const [, setLocation] = useLocation();
+
+  // Redirect to onboarding if not in demo mode and no data (though our context defaults to data, 
+  // in a real app we'd check if onboarding was completed. 
+  // Here we'll just rely on the user flow from /onboarding)
+  
+  // Calculate dynamic blended valuation based on input
+  // Simple mock logic: Revenue * 12 + some constant based on demo mode
+  const displayValuation = isDemoMode 
+    ? 12500000 
+    : (financials.revenue * 15) + (financials.lastRoundValuation * 0.5);
+
+  const displayValuationStr = `$${(displayValuation / 1000000).toFixed(1)}M`;
+
   return (
     <div className="space-y-6">
+      {/* Welcome Banner for User Mode */}
+      {!isDemoMode && (
+          <div className="bg-primary/10 border border-primary/20 rounded-lg p-4 flex items-center justify-between animate-in fade-in slide-in-from-top-4">
+              <div>
+                  <h3 className="font-bold text-primary flex items-center gap-2">
+                    Welcome, {companyProfile.name} 
+                    <Badge variant="secondary" className="text-xs">Series A Track</Badge>
+                  </h3>
+                  <p className="text-sm text-muted-foreground">We've initialized your valuation model based on your inputs.</p>
+              </div>
+              <Button variant="outline" size="sm" onClick={() => setLocation("/onboarding")}>Edit Profile</Button>
+          </div>
+      )}
+
+      {isDemoMode && (
+         <div className="bg-secondary/30 border border-secondary rounded-lg p-3 flex items-center justify-between">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Badge variant="outline">Demo Mode</Badge>
+                Viewing sample data for "Acme AI".
+            </div>
+            <Link href="/onboarding">
+                <Button size="sm">Start Your Valuation</Button>
+            </Link>
+         </div>
+      )}
+
       <SimulationSheet />
       
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 animate-in slide-in-from-top-4 duration-500">
@@ -55,7 +98,7 @@ export default function Dashboard() {
               <DollarSign className="h-4 w-4 text-primary" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold font-heading">$12.5M</div>
+              <div className="text-2xl font-bold font-heading">{displayValuationStr}</div>
               <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
                 <span className="text-emerald-500 flex items-center">
                   +15% <ArrowUpRight className="size-3" />
@@ -193,7 +236,7 @@ export default function Dashboard() {
                {/* Center Text */}
                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none pb-8">
                   <span className="text-xs text-muted-foreground">Blended</span>
-                  <span className="text-xl font-bold font-heading">$12.5M</span>
+                  <span className="text-xl font-bold font-heading">{displayValuationStr}</span>
                </div>
             </div>
           </CardContent>
@@ -233,7 +276,7 @@ export default function Dashboard() {
             </CardHeader>
             <CardContent className="space-y-4">
                 <div className="text-sm text-muted-foreground leading-relaxed">
-                    Based on your recent growth of <span className="text-foreground font-medium">15% MoM</span>, your valuation is trending towards the upper quartile of Series A SaaS companies. 
+                    Based on your recent growth of <span className="text-foreground font-medium">{isDemoMode ? "15%" : financials.growthRate + "%"} MoM</span>, your valuation is trending towards the upper quartile of {isDemoMode ? "Series A" : companyProfile.stage} companies. 
                 </div>
                 <div className="text-sm text-muted-foreground leading-relaxed">
                     Increasing your <span className="text-foreground font-medium">LTV/CAC ratio</span> from 3.5 to 4.0 could add an estimated <span className="text-emerald-500 font-bold">$1.8M</span> to your pre-money valuation.
