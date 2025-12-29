@@ -9,14 +9,24 @@ import { PlayCircle } from "lucide-react";
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [runTour, setRunTour] = React.useState(false);
 
-  // Check if it's the first visit
+  // Check if it's the first visit or if tour is requested
   React.useEffect(() => {
+    // Check for explicit start request (from onboarding)
+    const shouldStartTour = localStorage.getItem('start-tour');
+    if (shouldStartTour) {
+        setRunTour(true);
+        localStorage.removeItem('start-tour');
+        return;
+    }
+
+    // Optional: First visit check (currently disabled)
+    /*
     const hasSeenTour = localStorage.getItem('svi-tour-seen');
     if (!hasSeenTour) {
-        // Optional: Auto-start tour on first visit
         // setRunTour(true);
         // localStorage.setItem('svi-tour-seen', 'true');
     }
+    */
   }, []);
 
   return (

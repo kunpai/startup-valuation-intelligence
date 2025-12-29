@@ -61,6 +61,7 @@ export default function Onboarding() {
 
   const handleDemoMode = () => {
     setDemoMode(true);
+    localStorage.setItem('start-tour', 'true');
     setLocation("/");
   };
 
@@ -92,6 +93,7 @@ export default function Onboarding() {
     setMethodology(formData.methodology);
     
     completeOnboarding();
+    localStorage.setItem('start-tour', 'true');
     setLocation("/");
   };
   
