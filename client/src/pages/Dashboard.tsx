@@ -25,6 +25,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { MOCK_METHODOLOGY_BREAKDOWN, MOCK_VALUATION_HISTORY, MOCK_MILESTONES } from "@/lib/constants";
 import { SimulationSheet } from "@/components/dashboard/SimulationSheet";
+import { VirtualCFO } from "@/components/dashboard/VirtualCFO";
 import { Link, useLocation } from "wouter";
 import { useValuation } from "@/context/ValuationContext";
 import { useEffect } from "react";
@@ -222,22 +223,29 @@ export default function Dashboard() {
           </CardContent>
         </Card>
 
+        {/* Virtual CFO Chat - Replaces Pie Chart in this grid, moved below */}
+        <div className="col-span-3">
+            <VirtualCFO />
+        </div>
+      </div>
+
+      {/* Secondary Charts Grid */}
+      <div className="grid gap-4 md:grid-cols-2">
         {/* Methodology Breakdown - Pie Chart */}
-        <div className="col-span-3 grid gap-4 grid-rows-2">
-            <Card className="bg-card/50 backdrop-blur-sm border-primary/10 animate-in fade-in slide-in-from-right-8 duration-700 delay-300" data-tour="methodology-chart">
+        <Card className="bg-card/50 backdrop-blur-sm border-primary/10 animate-in fade-in slide-in-from-right-8 duration-700 delay-300" data-tour="methodology-chart">
             <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium">Methodology Weights</CardTitle>
             </CardHeader>
             <CardContent>
-                <div className="h-[140px] w-full relative">
+                <div className="h-[200px] w-full relative">
                 <ResponsiveContainer width="100%" height="100%">
                     <PieChart margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
                         <Pie
                         data={MOCK_METHODOLOGY_BREAKDOWN}
                         cx="50%"
                         cy="50%"
-                        innerRadius={40}
-                        outerRadius={55}
+                        innerRadius={60}
+                        outerRadius={80}
                         paddingAngle={5}
                         dataKey="value"
                         >
@@ -255,47 +263,46 @@ export default function Dashboard() {
                             align="right"
                             iconType="circle"
                             iconSize={8}
-                            formatter={(value) => <span className="text-[10px] text-muted-foreground ml-1">{value}</span>}
+                            formatter={(value) => <span className="text-xs text-muted-foreground ml-1">{value}</span>}
                         />
                     </PieChart>
                 </ResponsiveContainer>
                 </div>
             </CardContent>
-            </Card>
+        </Card>
 
-            <Card className="bg-card/50 backdrop-blur-sm border-primary/10 animate-in fade-in slide-in-from-right-8 duration-700 delay-400">
-                <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium">Qualitative Benchmarking</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <div className="h-[140px] w-full">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <RadarChart cx="50%" cy="50%" outerRadius="65%" data={userRadarData}>
-                                <PolarGrid stroke="hsl(var(--muted-foreground))" strokeOpacity={0.2} />
-                                <PolarAngleAxis dataKey="subject" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 10 }} />
-                                <Radar
-                                    name="You"
-                                    dataKey="score"
-                                    stroke="hsl(var(--primary))"
-                                    fill="hsl(var(--primary))"
-                                    fillOpacity={0.3}
-                                />
-                                <Radar
-                                    name="Industry Avg"
-                                    dataKey="benchmark"
-                                    stroke="hsl(var(--muted-foreground))"
-                                    fill="hsl(var(--muted-foreground))"
-                                    fillOpacity={0.1}
-                                />
-                                <Tooltip
-                                    contentStyle={{ backgroundColor: 'hsl(var(--popover))', borderColor: 'hsl(var(--border))', borderRadius: '8px', fontSize: '12px' }}
-                                />
-                            </RadarChart>
-                        </ResponsiveContainer>
-                    </div>
-                </CardContent>
-            </Card>
-        </div>
+        <Card className="bg-card/50 backdrop-blur-sm border-primary/10 animate-in fade-in slide-in-from-right-8 duration-700 delay-400">
+            <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium">Qualitative Benchmarking</CardTitle>
+            </CardHeader>
+            <CardContent>
+                <div className="h-[200px] w-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                        <RadarChart cx="50%" cy="50%" outerRadius="70%" data={userRadarData}>
+                            <PolarGrid stroke="hsl(var(--muted-foreground))" strokeOpacity={0.2} />
+                            <PolarAngleAxis dataKey="subject" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 10 }} />
+                            <Radar
+                                name="You"
+                                dataKey="score"
+                                stroke="hsl(var(--primary))"
+                                fill="hsl(var(--primary))"
+                                fillOpacity={0.3}
+                            />
+                            <Radar
+                                name="Industry Avg"
+                                dataKey="benchmark"
+                                stroke="hsl(var(--muted-foreground))"
+                                fill="hsl(var(--muted-foreground))"
+                                fillOpacity={0.1}
+                            />
+                            <Tooltip
+                                contentStyle={{ backgroundColor: 'hsl(var(--popover))', borderColor: 'hsl(var(--border))', borderRadius: '8px', fontSize: '12px' }}
+                            />
+                        </RadarChart>
+                    </ResponsiveContainer>
+                </div>
+            </CardContent>
+        </Card>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 animate-in fade-in slide-in-from-bottom-8 duration-1000 delay-500">
