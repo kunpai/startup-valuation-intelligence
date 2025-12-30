@@ -126,7 +126,15 @@ export function ValuationProvider({ children }: { children: ReactNode }) {
             sector: company.sector,
             stage: company.stage,
             region: company.region,
-            foundedYear: company.foundedYear
+            foundedYear: company.foundedYear,
+            // Harmonic-aligned fields for better comp matching
+            industryTags: company.industryTags || [],
+            technologyTags: company.technologyTags || [],
+            customerType: company.customerType || undefined,
+            revenueModel: company.revenueModel || undefined,
+            targetCustomerSize: company.targetCustomerSize || undefined,
+            country: company.country || undefined,
+            description: company.description || undefined
           });
           setIsDemoMode(false);
           

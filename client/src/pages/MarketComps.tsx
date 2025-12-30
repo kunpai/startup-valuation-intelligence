@@ -6,8 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { MOCK_COMPS, SECTORS, STAGES, REGIONS } from "@/lib/constants";
-import { Search, Filter, Download, Plus, Sparkles, Building2, TrendingUp, DollarSign, X, Loader2, Trash2 } from "lucide-react";
+import { SECTORS, STAGES, REGIONS, INDUSTRY_TAGS, TECHNOLOGY_TAGS, HARMONIC_FUNDING_STAGES, COUNTRIES } from "@/lib/constants";
+import { Search, Filter, Download, Plus, Sparkles, Building2, TrendingUp, DollarSign, X, Loader2, Trash2, RefreshCw } from "lucide-react";
 import { ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ZAxis, Legend } from 'recharts';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
@@ -17,15 +17,54 @@ import { useValuation } from "@/context/ValuationContext";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type { Comparable } from "@shared/schema";
 
+interface HarmonicCompany {
+  id: string;
+  name: string;
+  description: string;
+  sector: string;
+  stage: string;
+  region: string;
+  valuation: number;
+  revenue: number;
+  growth: number;
+  fundingTotal: number;
+  website: string;
+  tags: string[];
+}
+
 export default function MarketComps() {
-  const { currentCompanyId } = useValuation();
+  const { currentCompanyId, companyProfile, financials } = useValuation();
   const queryClient = useQueryClient();
   
-  // Filters
-  const [selectedSector, setSelectedSector] = useState("all-sectors");
+  // Filters - initialized from company profile
+  const [selectedIndustryTags, setSelectedIndustryTags] = useState<string[]>([]);
+  const [selectedTechTags, setSelectedTechTags] = useState<string[]>([]);
   const [selectedStage, setSelectedStage] = useState("all-stages");
-  const [selectedRegion, setSelectedRegion] = useState("all-regions");
+  const [selectedCountry, setSelectedCountry] = useState("all-countries");
   const [searchQuery, setSearchQuery] = useState("");
+  const [filtersInitialized, setFiltersInitialized] = useState(false);
+  
+  // Initialize filters from company profile
+  useEffect(() => {
+    if (!filtersInitialized && companyProfile) {
+      if (companyProfile.industryTags && companyProfile.industryTags.length > 0) {
+        setSelectedIndustryTags(companyProfile.industryTags);
+      }
+      if (companyProfile.technologyTags && companyProfile.technologyTags.length > 0) {
+        setSelectedTechTags(companyProfile.technologyTags);
+      }
+      if (companyProfile.stage) {
+        const stageMapping = HARMONIC_FUNDING_STAGES.find(s => s.label === companyProfile.stage || s.value === companyProfile.stage);
+        if (stageMapping) {
+          setSelectedStage(stageMapping.value);
+        }
+      }
+      if (companyProfile.country) {
+        setSelectedCountry(companyProfile.country);
+      }
+      setFiltersInitialized(true);
+    }
+  }, [companyProfile, filtersInitialized]);
 
   // Fetch user's saved comparables from database (scoped to current company)
   const { data: savedComps = [], isLoading } = useQuery<Comparable[]>({
@@ -37,6 +76,30 @@ export default function MarketComps() {
       return res.json();
     },
     enabled: !!currentCompanyId
+  });
+
+  // Fetch real Harmonic companies based on current filters
+  const { data: harmonicComps = [], isLoading: isLoadingHarmonic, refetch: refetchHarmonic } = useQuery<HarmonicCompany[]>({
+    queryKey: ['/api/harmonic/search', selectedIndustryTags, selectedTechTags, selectedStage, selectedCountry],
+    queryFn: async () => {
+      const params = new URLSearchParams({ limit: "50" });
+      if (selectedIndustryTags.length > 0) params.set("industryTags", selectedIndustryTags.join(','));
+      if (selectedTechTags.length > 0) params.set("technologyTags", selectedTechTags.join(','));
+      if (selectedStage && selectedStage !== "all-stages") {
+        const stageMapping = HARMONIC_FUNDING_STAGES.find(s => s.value === selectedStage);
+        if (stageMapping) params.set("stage", stageMapping.label);
+      }
+      if (selectedCountry && selectedCountry !== "all-countries") params.set("country", selectedCountry);
+      
+      const res = await fetch(`/api/harmonic/search?${params}`);
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.message || 'Failed to fetch companies');
+      }
+      return res.json();
+    },
+    enabled: filtersInitialized,
+    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
   });
 
   // Create comparable mutation
@@ -94,36 +157,34 @@ export default function MarketComps() {
     source: "Manual Entry"
   });
 
-  // Filter Logic
+  // Filter Logic - use real Harmonic data
   const filteredComps = useMemo(() => {
-    return MOCK_COMPS.filter(comp => {
-      const matchesSector = selectedSector === "all-sectors" || comp.sector === selectedSector;
-      const matchesStage = selectedStage === "all-stages" || comp.round === selectedStage;
-      const matchesRegion = selectedRegion === "all-regions" || comp.region === selectedRegion;
-      const matchesSearch = comp.company.toLowerCase().includes(searchQuery.toLowerCase());
+    return harmonicComps.filter(comp => {
+      // Filter by search query
+      const matchesSearch = !searchQuery || comp.name.toLowerCase().includes(searchQuery.toLowerCase());
       
       // Filter out comps already saved
-      const isNotSelected = !savedComps.some((myComp: Comparable) => myComp.companyName === comp.company);
+      const isNotSelected = !savedComps.some((myComp: Comparable) => myComp.companyName === comp.name);
 
-      return matchesSector && matchesStage && matchesRegion && matchesSearch && isNotSelected;
+      return matchesSearch && isNotSelected;
     });
-  }, [selectedSector, selectedStage, selectedRegion, searchQuery, savedComps]);
+  }, [harmonicComps, searchQuery, savedComps]);
 
-  const addToMyComps = (comp: typeof MOCK_COMPS[0]) => {
+  const addToMyComps = (comp: HarmonicCompany) => {
     if (!currentCompanyId) {
       toast.error("No company selected", { description: "Please complete onboarding first." });
       return;
     }
     createCompMutation.mutate({
-      companyName: comp.company,
+      companyName: comp.name,
       sector: comp.sector,
-      stage: comp.round,
+      stage: comp.stage,
       valuation: comp.valuation,
       revenue: comp.revenue,
       growthRate: comp.growth,
       region: comp.region,
-      fundingRound: comp.round,
-      source: "Market Data"
+      fundingRound: comp.stage,
+      source: "Harmonic"
     });
   };
 
@@ -191,21 +252,39 @@ export default function MarketComps() {
                         Comp Discovery Engine
                     </CardTitle>
                     <CardDescription>
-                        Define your profile to find matching peers.
+                        {companyProfile.name ? `Finding peers for ${companyProfile.name}` : "Define your profile to find matching peers."}
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                     <div className="space-y-2">
-                        <Label>Target Sector</Label>
-                        <Select value={selectedSector} onValueChange={setSelectedSector}>
+                        <Label>Industry Tags</Label>
+                        <Select 
+                          value={selectedIndustryTags[0] || "all-industries"} 
+                          onValueChange={(v) => setSelectedIndustryTags(v === "all-industries" ? [] : [v])}
+                        >
                             <SelectTrigger>
-                                <SelectValue placeholder="Select Sector" />
+                                <SelectValue placeholder="Select Industry" />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="all-sectors">All Sectors</SelectItem>
-                                {SECTORS.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                                <SelectItem value="all-industries">All Industries</SelectItem>
+                                {INDUSTRY_TAGS.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
                             </SelectContent>
                         </Select>
+                        {selectedIndustryTags.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {selectedIndustryTags.map(tag => (
+                              <Badge key={tag} variant="secondary" className="text-xs">
+                                {tag}
+                                <button 
+                                  onClick={() => setSelectedIndustryTags(selectedIndustryTags.filter(t => t !== tag))}
+                                  className="ml-1 hover:text-destructive"
+                                >
+                                  <X className="size-3" />
+                                </button>
+                              </Badge>
+                            ))}
+                          </div>
+                        )}
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
@@ -217,19 +296,19 @@ export default function MarketComps() {
                                 </SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="all-stages">All Stages</SelectItem>
-                                    {STAGES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                                    {HARMONIC_FUNDING_STAGES.map(s => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
                                 </SelectContent>
                             </Select>
                         </div>
                         <div className="space-y-2">
-                            <Label>Region</Label>
-                            <Select value={selectedRegion} onValueChange={setSelectedRegion}>
+                            <Label>Country</Label>
+                            <Select value={selectedCountry} onValueChange={setSelectedCountry}>
                                 <SelectTrigger>
-                                    <SelectValue placeholder="Region" />
+                                    <SelectValue placeholder="Country" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="all-regions">All Regions</SelectItem>
-                                    {REGIONS.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}
+                                    <SelectItem value="all-countries">All Countries</SelectItem>
+                                    {COUNTRIES.map(c => <SelectItem key={c.value} value={c.value}>{c.value}</SelectItem>)}
                                 </SelectContent>
                             </Select>
                         </div>
@@ -251,11 +330,21 @@ export default function MarketComps() {
                     <div className="pt-2">
                          <div className="text-xs text-muted-foreground mb-2 flex justify-between">
                             <span>Available Matches:</span>
-                            <span className="font-mono font-bold text-foreground">{filteredComps.length}</span>
+                            <span className="font-mono font-bold text-foreground">
+                              {isLoadingHarmonic ? <Loader2 className="size-3 animate-spin inline" /> : filteredComps.length}
+                            </span>
                          </div>
-                        <Button className="w-full gap-2" variant="secondary" disabled={filteredComps.length === 0}>
-                            <Filter className="size-4" /> 
-                            {filteredComps.length > 0 ? "Apply Filters" : "No Matches Found"}
+                        <Button 
+                          className="w-full gap-2" 
+                          variant="secondary" 
+                          onClick={() => refetchHarmonic()}
+                          disabled={isLoadingHarmonic}
+                        >
+                            {isLoadingHarmonic ? (
+                              <><Loader2 className="size-4 animate-spin" /> Searching...</>
+                            ) : (
+                              <><RefreshCw className="size-4" /> Refresh Results</>
+                            )}
                         </Button>
                     </div>
                 </CardContent>
@@ -392,7 +481,7 @@ export default function MarketComps() {
                                 <Scatter name="Selected Comps" data={savedComps} fill="hsl(var(--primary))" shape="circle" />
                                 <Scatter 
                                     name="Your Company" 
-                                    data={[{ revenue: 600000, valuation: 12500000, growth: 120 }]} 
+                                    data={[{ revenue: financials.revenue || 600000, valuation: financials.lastRoundValuation || 12500000, growth: financials.growthRate || 15 }]} 
                                     fill="hsl(var(--chart-2))" 
                                     shape="star" 
                                 />
@@ -432,30 +521,37 @@ export default function MarketComps() {
                                         </TableCell>
                                     </TableRow>
                                 ) : (
-                                    filteredComps.map((comp, i) => (
-                                        <TableRow key={i} className="hover:bg-secondary/30 transition-colors">
+                                    filteredComps.map((comp) => (
+                                        <TableRow key={comp.id} className="hover:bg-secondary/30 transition-colors">
                                             <TableCell>
-                                                <div className="font-medium text-foreground">{comp.company}</div>
-                                                <div className="flex gap-2 mt-1">
-                                                    <Badge variant="outline" className="text-[10px] h-5 px-1.5">{comp.sector}</Badge>
+                                                <div className="font-medium text-foreground">{comp.name}</div>
+                                                <div className="flex gap-2 mt-1 flex-wrap">
+                                                    <Badge variant="outline" className="text-[10px] h-5 px-1.5">{comp.sector || 'Tech'}</Badge>
                                                     <span className="text-xs text-muted-foreground">{comp.region}</span>
                                                 </div>
+                                                {comp.tags && comp.tags.length > 0 && (
+                                                  <div className="flex gap-1 mt-1 flex-wrap">
+                                                    {comp.tags.slice(0, 2).map((tag, idx) => (
+                                                      <Badge key={idx} variant="secondary" className="text-[9px] h-4 px-1">{tag}</Badge>
+                                                    ))}
+                                                  </div>
+                                                )}
                                             </TableCell>
                                             <TableCell>
                                                 <div className="text-xs space-y-1">
                                                     <div className="flex justify-between w-32">
-                                                        <span className="text-muted-foreground">Rev:</span>
-                                                        <span className="font-mono">${(comp.revenue/1000).toFixed(0)}k</span>
+                                                        <span className="text-muted-foreground">Funding:</span>
+                                                        <span className="font-mono">${((comp.fundingTotal || 0)/1000000).toFixed(1)}M</span>
                                                     </div>
                                                     <div className="flex justify-between w-32">
-                                                        <span className="text-muted-foreground">Growth:</span>
-                                                        <span className="font-mono text-emerald-500">{comp.growth}%</span>
+                                                        <span className="text-muted-foreground">Stage:</span>
+                                                        <span className="font-mono">{comp.stage}</span>
                                                     </div>
                                                 </div>
                                             </TableCell>
                                             <TableCell className="text-right">
-                                                <div className="font-mono font-medium">${(comp.valuation / 1000000).toFixed(1)}M</div>
-                                                <div className="text-xs text-muted-foreground">{comp.round}</div>
+                                                <div className="font-mono font-medium">${((comp.valuation || 0) / 1000000).toFixed(1)}M</div>
+                                                <div className="text-xs text-muted-foreground">{comp.stage}</div>
                                             </TableCell>
                                             <TableCell className="text-right">
                                                 <Button size="sm" variant="secondary" onClick={() => addToMyComps(comp)}>
