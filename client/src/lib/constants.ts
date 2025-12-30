@@ -1,23 +1,125 @@
 
-export const SECTORS = [
-  "B2B SaaS",
-  "Fintech",
-  "Marketplace",
-  "E-commerce",
-  "HealthTech",
-  "DeepTech",
-  "Web3/Crypto",
-  "Consumer App",
-  "EdTech",
-  "PropTech",
-  "ClimateTech",
-  "Cybersecurity"
+// Harmonic-aligned Industry Tags (INDUSTRY type in Harmonic)
+export const INDUSTRY_TAGS = [
+  "Business Software Services",
+  "Financial Technology",
+  "Financial / Insurance Services",
+  "Health / Wellness",
+  "Biotechnology",
+  "Chemical / Life Sciences",
+  "Media / News / Entertainment",
+  "Transportation / Mobility",
+  "Real Estate / Property",
+  "Automotive",
+  "Next Gen Manufacturing",
+  "Consumer Products / Retail",
+  "Energy / Utilities",
+  "Education",
+  "Travel / Hospitality",
+  "Agriculture / Food",
+  "Government / Public Sector",
+  "Telecommunications",
+  "Professional Services",
 ];
+
+// Harmonic-aligned Technology Tags (TECHNOLOGY type in Harmonic)
+export const TECHNOLOGY_TAGS = [
+  "AI / ML",
+  "SaaS",
+  "Social Networking",
+  "Hardware",
+  "Mobile",
+  "Blockchain / Web3",
+  "Cloud Computing",
+  "Cybersecurity",
+  "IoT",
+  "Big Data / Analytics",
+  "AR / VR",
+  "Robotics",
+  "Quantum Computing",
+  "3D Printing",
+  "Drones / UAV",
+];
+
+// Harmonic-aligned Funding Stages (exactly as Harmonic returns them)
+export const HARMONIC_FUNDING_STAGES = [
+  { value: "PRE_SEED", label: "Pre-Seed" },
+  { value: "SEED", label: "Seed" },
+  { value: "SERIES_A", label: "Series A" },
+  { value: "SERIES_B", label: "Series B" },
+  { value: "SERIES_C", label: "Series C" },
+  { value: "SERIES_D", label: "Series D+" },
+  { value: "LATE_STAGE", label: "Late Stage / Growth" },
+];
+
+// Customer Types (as Harmonic returns them)
+export const CUSTOMER_TYPES = [
+  { value: "B2B", label: "Business (B2B)", harmonicValue: "Business (B2B)" },
+  { value: "B2C", label: "Consumer (B2C)", harmonicValue: "Consumer (B2C)" },
+  { value: "B2B2C", label: "Business to Business to Consumer (B2B2C)", harmonicValue: "B2B2C" },
+  { value: "B2G", label: "Government (B2G)", harmonicValue: "Government (B2G)" },
+];
+
+// Revenue Models
+export const REVENUE_MODELS = [
+  { value: "subscription", label: "Subscription / SaaS" },
+  { value: "transactional", label: "Transactional / Per-Use" },
+  { value: "marketplace", label: "Marketplace / Take Rate" },
+  { value: "licensing", label: "Licensing" },
+  { value: "advertising", label: "Advertising" },
+  { value: "hardware", label: "Hardware + Services" },
+  { value: "freemium", label: "Freemium" },
+  { value: "enterprise", label: "Enterprise Contracts" },
+  { value: "hybrid", label: "Hybrid / Multiple" },
+];
+
+// Target Customer Size
+export const TARGET_CUSTOMER_SIZES = [
+  { value: "smb", label: "SMB (Small/Medium Business)" },
+  { value: "mid_market", label: "Mid-Market" },
+  { value: "enterprise", label: "Enterprise" },
+  { value: "consumers", label: "Individual Consumers" },
+  { value: "startups", label: "Startups" },
+  { value: "all", label: "All Segments" },
+];
+
+// Countries (for region mapping)
+export const COUNTRIES = [
+  { value: "United States", region: "North America" },
+  { value: "Canada", region: "North America" },
+  { value: "United Kingdom", region: "Europe" },
+  { value: "Germany", region: "Europe" },
+  { value: "France", region: "Europe" },
+  { value: "Netherlands", region: "Europe" },
+  { value: "Sweden", region: "Europe" },
+  { value: "Switzerland", region: "Europe" },
+  { value: "Spain", region: "Europe" },
+  { value: "Italy", region: "Europe" },
+  { value: "Ireland", region: "Europe" },
+  { value: "Israel", region: "MENA" },
+  { value: "United Arab Emirates", region: "MENA" },
+  { value: "Saudi Arabia", region: "MENA" },
+  { value: "India", region: "Asia Pacific" },
+  { value: "China", region: "Asia Pacific" },
+  { value: "Japan", region: "Asia Pacific" },
+  { value: "Singapore", region: "Asia Pacific" },
+  { value: "South Korea", region: "Asia Pacific" },
+  { value: "Australia", region: "Asia Pacific" },
+  { value: "Indonesia", region: "Asia Pacific" },
+  { value: "Brazil", region: "Latin America" },
+  { value: "Mexico", region: "Latin America" },
+  { value: "Argentina", region: "Latin America" },
+  { value: "Nigeria", region: "Africa" },
+  { value: "South Africa", region: "Africa" },
+  { value: "Kenya", region: "Africa" },
+];
+
+// Legacy exports for backward compatibility
+export const SECTORS = INDUSTRY_TAGS;
 
 export const STAGES = [
   "Pre-Seed",
   "Seed",
-  "Pre-Series A",
   "Series A",
   "Series B",
   "Series C+",
@@ -42,21 +144,21 @@ export const MOCK_VALUATION_HISTORY = [
 ];
 
 export const MOCK_COMPS = [
-  { company: "Acme AI", sector: "B2B SaaS", round: "Seed", valuation: 12000000, revenue: 500000, growth: 120, region: "North America" },
-  { company: "FinFlow", sector: "Fintech", round: "Pre-Series A", valuation: 15000000, revenue: 800000, growth: 85, region: "Europe" },
-  { company: "Healthify", sector: "HealthTech", round: "Seed", valuation: 9000000, revenue: 200000, growth: 200, region: "Asia Pacific" },
-  { company: "LogiChain", sector: "Marketplace", round: "Series A", valuation: 28000000, revenue: 2500000, growth: 150, region: "North America" },
-  { company: "SecureNet", sector: "DeepTech", round: "Seed", valuation: 18000000, revenue: 100000, growth: 50, region: "Israel" },
-  { company: "EduLearn", sector: "EdTech", round: "Seed", valuation: 7500000, revenue: 150000, growth: 90, region: "Europe" },
-  { company: "PropEstate", sector: "PropTech", round: "Series A", valuation: 22000000, revenue: 1800000, growth: 110, region: "North America" },
-  { company: "GreenPower", sector: "ClimateTech", round: "Pre-Seed", valuation: 4500000, revenue: 0, growth: 0, region: "Europe" },
-  { company: "BlockTrade", sector: "Web3/Crypto", round: "Series A", valuation: 40000000, revenue: 5000000, growth: 300, region: "Asia Pacific" },
-  { company: "CyberGuard", sector: "Cybersecurity", round: "Pre-Series A", valuation: 16000000, revenue: 900000, growth: 70, region: "Israel" },
-  { company: "ShopFast", sector: "E-commerce", round: "Seed", valuation: 6000000, revenue: 300000, growth: 60, region: "Latin America" },
-  { company: "PayNow", sector: "Fintech", round: "Series B", valuation: 150000000, revenue: 12000000, growth: 130, region: "MENA" },
-  { company: "FarmTech", sector: "AgriTech", round: "Seed", valuation: 5500000, revenue: 50000, growth: 40, region: "Africa" },
-  { company: "MediCare", sector: "HealthTech", round: "Series A", valuation: 32000000, revenue: 3000000, growth: 180, region: "North America" },
-  { company: "SaaSify", sector: "B2B SaaS", round: "Series A", valuation: 25000000, revenue: 2000000, growth: 100, region: "Europe" }
+  { company: "Acme AI", sector: "Business Software Services", round: "Seed", valuation: 12000000, revenue: 500000, growth: 120, region: "North America" },
+  { company: "FinFlow", sector: "Financial Technology", round: "Series A", valuation: 15000000, revenue: 800000, growth: 85, region: "Europe" },
+  { company: "Healthify", sector: "Health / Wellness", round: "Seed", valuation: 9000000, revenue: 200000, growth: 200, region: "Asia Pacific" },
+  { company: "LogiChain", sector: "Transportation / Mobility", round: "Series A", valuation: 28000000, revenue: 2500000, growth: 150, region: "North America" },
+  { company: "SecureNet", sector: "Business Software Services", round: "Seed", valuation: 18000000, revenue: 100000, growth: 50, region: "MENA" },
+  { company: "EduLearn", sector: "Education", round: "Seed", valuation: 7500000, revenue: 150000, growth: 90, region: "Europe" },
+  { company: "PropEstate", sector: "Real Estate / Property", round: "Series A", valuation: 22000000, revenue: 1800000, growth: 110, region: "North America" },
+  { company: "GreenPower", sector: "Energy / Utilities", round: "Pre-Seed", valuation: 4500000, revenue: 0, growth: 0, region: "Europe" },
+  { company: "BlockTrade", sector: "Financial Technology", round: "Series A", valuation: 40000000, revenue: 5000000, growth: 300, region: "Asia Pacific" },
+  { company: "CyberGuard", sector: "Business Software Services", round: "Series A", valuation: 16000000, revenue: 900000, growth: 70, region: "MENA" },
+  { company: "ShopFast", sector: "Consumer Products / Retail", round: "Seed", valuation: 6000000, revenue: 300000, growth: 60, region: "Latin America" },
+  { company: "PayNow", sector: "Financial Technology", round: "Series B", valuation: 150000000, revenue: 12000000, growth: 130, region: "MENA" },
+  { company: "FarmTech", sector: "Agriculture / Food", round: "Seed", valuation: 5500000, revenue: 50000, growth: 40, region: "Africa" },
+  { company: "MediCare", sector: "Health / Wellness", round: "Series A", valuation: 32000000, revenue: 3000000, growth: 180, region: "North America" },
+  { company: "SaaSify", sector: "Business Software Services", round: "Series A", valuation: 25000000, revenue: 2000000, growth: 100, region: "Europe" }
 ];
 
 export const MOCK_METHODOLOGY_BREAKDOWN = [
