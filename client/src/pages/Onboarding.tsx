@@ -198,6 +198,7 @@ export default function Onboarding() {
   const [, setLocation] = useLocation();
   const [step, setStep] = useState(0);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [formData, setFormData] = useState({
     // Basics
@@ -313,41 +314,57 @@ export default function Onboarding() {
   };
 
   const handleComplete = async () => {
-    const stageLabel = HARMONIC_FUNDING_STAGES.find(s => s.value === formData.stage)?.label || "Seed";
+    // Prevent duplicate submissions
+    if (isSubmitting) return;
     
-    await completeOnboarding({
-      profile: {
-        name: formData.name,
-        sector: formData.industryTags[0] || "Business Software Services",
-        stage: stageLabel,
-        region: formData.region,
-        foundedYear: formData.foundedYear,
-        industryTags: formData.industryTags,
-        technologyTags: formData.technologyTags,
-        customerType: formData.customerType,
-        revenueModel: formData.revenueModel,
-        targetCustomerSize: formData.targetCustomerSize,
-        country: formData.country,
-        description: formData.description
-      },
-      financials: {
-        revenue: formData.revenue,
-        growthRate: formData.growthRate,
-        lastRoundValuation: formData.lastRoundValuation,
-        burnRate: formData.burnRate,
-        cashBalance: formData.cashBalance
-      },
-      qualitative: {
-        team: formData.teamScore,
-        product: formData.productScore,
-        market: formData.marketScore
-      },
-      methodology: formData.methodology
-    });
+    // Validate company name is not empty
+    if (!formData.name.trim()) {
+      setErrors({ name: "Company name is required" });
+      return;
+    }
     
-    updateHistory(formData.history);
-    localStorage.setItem('start-tour', 'true');
-    setLocation("/");
+    setIsSubmitting(true);
+    
+    try {
+      const stageLabel = HARMONIC_FUNDING_STAGES.find(s => s.value === formData.stage)?.label || "Seed";
+      
+      await completeOnboarding({
+        profile: {
+          name: formData.name.trim(),
+          sector: formData.industryTags[0] || "Business Software Services",
+          stage: stageLabel,
+          region: formData.region,
+          foundedYear: formData.foundedYear,
+          industryTags: formData.industryTags,
+          technologyTags: formData.technologyTags,
+          customerType: formData.customerType,
+          revenueModel: formData.revenueModel,
+          targetCustomerSize: formData.targetCustomerSize,
+          country: formData.country,
+          description: formData.description
+        },
+        financials: {
+          revenue: formData.revenue,
+          growthRate: formData.growthRate,
+          lastRoundValuation: formData.lastRoundValuation,
+          burnRate: formData.burnRate,
+          cashBalance: formData.cashBalance
+        },
+        qualitative: {
+          team: formData.teamScore,
+          product: formData.productScore,
+          market: formData.marketScore
+        },
+        methodology: formData.methodology
+      });
+      
+      updateHistory(formData.history);
+      localStorage.setItem('start-tour', 'true');
+      setLocation("/");
+    } catch (error) {
+      console.error("Failed to complete onboarding:", error);
+      setIsSubmitting(false);
+    }
   };
   
   const addHistoryItem = () => {
@@ -877,8 +894,17 @@ export default function Onboarding() {
                         <ArrowLeft className="size-4" /> Back
                     </Button>
                     {isLastStep ? (
-                        <Button onClick={handleComplete} className="gap-2 shadow-lg shadow-primary/20" data-testid="button-complete">
-                            Complete Setup <Sparkles className="size-4" />
+                        <Button 
+                          onClick={handleComplete} 
+                          className="gap-2 shadow-lg shadow-primary/20" 
+                          data-testid="button-complete"
+                          disabled={isSubmitting}
+                        >
+                            {isSubmitting ? (
+                              <>Saving... <Loader2 className="size-4 animate-spin" /></>
+                            ) : (
+                              <>Complete Setup <Sparkles className="size-4" /></>
+                            )}
                         </Button>
                     ) : (
                         <Button onClick={handleNext} className="gap-2" data-testid="button-next">
