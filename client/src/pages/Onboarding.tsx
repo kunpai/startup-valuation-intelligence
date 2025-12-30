@@ -1,7 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useValuation } from "@/context/ValuationContext";
 import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
+import { useDebounce } from "@/hooks/useDebounce";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -41,6 +42,25 @@ interface HarmonicCompany {
   headcount: number | null;
   website: string | null;
   logoUrl: string | null;
+}
+
+interface HarmonicNameSearchResult {
+  id: string;
+  name: string;
+  description: string | null;
+  sector: string | null;
+  stage: string | null;
+  region: string | null;
+  country: string | null;
+  fundingTotal: number | null;
+  lastFundingRound: string | null;
+  headcount: number | null;
+  website: string | null;
+  logoUrl: string | null;
+  industryTags: string[];
+  technologyTags: string[];
+  customerType: string | null;
+  foundedYear: number | null;
 }
 
 const basicsSchema = z.object({
@@ -200,6 +220,12 @@ export default function Onboarding() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Company search UI state
+  const [showSearchResults, setShowSearchResults] = useState(false);
+  const [selectedFromSearch, setSelectedFromSearch] = useState(false);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
   const [formData, setFormData] = useState({
     // Basics
     name: "",
@@ -243,6 +269,82 @@ export default function Onboarding() {
     productScore: 50,
     marketScore: 50
   });
+
+  // Company search - debounce name input for Harmonic API search
+  const debouncedName = useDebounce(formData.name, 400);
+
+  // Query for company name search - uses formData.name directly
+  const { data: searchResults, isLoading: isSearching } = useQuery<HarmonicNameSearchResult[]>({
+    queryKey: ["/api/harmonic/search-by-name", debouncedName],
+    queryFn: async () => {
+      if (!debouncedName || debouncedName.length < 2) return [];
+      const res = await fetch(`/api/harmonic/search-by-name?q=${encodeURIComponent(debouncedName)}&limit=8`, { credentials: "include" });
+      if (!res.ok) return [];
+      return res.json();
+    },
+    enabled: debouncedName.length >= 2 && !selectedFromSearch,
+    staleTime: 30000,
+  });
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        dropdownRef.current && 
+        !dropdownRef.current.contains(event.target as Node) &&
+        searchInputRef.current &&
+        !searchInputRef.current.contains(event.target as Node)
+      ) {
+        setShowSearchResults(false);
+      }
+    };
+    
+    if (showSearchResults) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [showSearchResults]);
+
+  // Handle selecting a company from search results
+  const handleSelectCompany = useCallback((company: HarmonicNameSearchResult) => {
+    setSelectedFromSearch(true);
+    setShowSearchResults(false);
+    
+    // Map Harmonic stage format to our format
+    const stageMap: Record<string, string> = {
+      "Pre-Seed": "PRE_SEED",
+      "Seed": "SEED",
+      "Series A": "SERIES_A",
+      "Series B": "SERIES_B",
+      "Series C": "SERIES_C",
+      "Series C+": "SERIES_C",
+    };
+    
+    // Auto-fill form data from Harmonic
+    setFormData(prev => ({
+      ...prev,
+      name: company.name,
+      description: company.description || prev.description,
+      industryTags: company.industryTags.length > 0 ? company.industryTags.slice(0, 3) : prev.industryTags,
+      technologyTags: company.technologyTags.length > 0 ? company.technologyTags.slice(0, 3) : prev.technologyTags,
+      customerType: company.customerType || prev.customerType,
+      country: company.country || prev.country,
+      stage: stageMap[company.stage || ""] || prev.stage,
+      lastRoundValuation: company.fundingTotal || prev.lastRoundValuation,
+      foundedYear: company.foundedYear || prev.foundedYear,
+    }));
+  }, []);
+
+  // Handle company name input change
+  const handleNameInputChange = useCallback((value: string) => {
+    setFormData(prev => ({ ...prev, name: value }));
+    // Reset selected flag when user types again after selection
+    if (selectedFromSearch) {
+      setSelectedFromSearch(false);
+    }
+    // Show results when typing at least 2 chars
+    setShowSearchResults(value.length >= 2);
+  }, [selectedFromSearch]);
 
   // Derive legacy fields from new fields
   useEffect(() => {
@@ -473,16 +575,78 @@ export default function Onboarding() {
                         <span>Please fill in all required fields to continue.</span>
                     </div>
                 )}
-                <div className="space-y-2">
-                    <Label>Company Name <span className="text-destructive">*</span></Label>
-                    <Input 
-                        placeholder="e.g. Acme Inc." 
-                        value={formData.name}
-                        onChange={(e) => setFormData({...formData, name: e.target.value})}
-                        autoFocus
-                        className={`text-lg ${errors.name ? 'border-destructive focus-visible:ring-destructive' : ''}`}
-                        data-testid="input-company-name"
-                    />
+                <div className="space-y-2 relative">
+                    <Label className="flex items-center gap-2">
+                        Company Name <span className="text-destructive">*</span>
+                        {isSearching && <Loader2 className="size-3 animate-spin text-muted-foreground" />}
+                    </Label>
+                    <div className="relative">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+                        <Input 
+                            ref={searchInputRef}
+                            placeholder="Search your company by name..." 
+                            value={formData.name}
+                            onChange={(e) => handleNameInputChange(e.target.value)}
+                            onFocus={() => {
+                                if (formData.name.length >= 2 && !selectedFromSearch) setShowSearchResults(true);
+                            }}
+                            autoFocus
+                            className={`pl-10 text-lg ${errors.name ? 'border-destructive focus-visible:ring-destructive' : ''}`}
+                            data-testid="input-company-name"
+                        />
+                    </div>
+                    
+                    {showSearchResults && searchResults && searchResults.length > 0 && (
+                        <div 
+                            ref={dropdownRef}
+                            className="absolute z-50 w-full mt-1 bg-card border rounded-lg shadow-xl max-h-[300px] overflow-y-auto"
+                        >
+                            <div className="p-2 border-b bg-secondary/30">
+                                <p className="text-xs text-muted-foreground flex items-center gap-1">
+                                    <Sparkles className="size-3" /> Found in Harmonic database - click to auto-fill
+                                </p>
+                            </div>
+                            {searchResults.map((company) => (
+                                <div
+                                    key={company.id}
+                                    className="p-3 hover:bg-secondary/50 cursor-pointer border-b last:border-b-0 transition-colors"
+                                    onClick={() => handleSelectCompany(company)}
+                                    data-testid={`search-result-${company.id}`}
+                                >
+                                    <div className="flex items-start justify-between gap-2">
+                                        <div className="flex-1 min-w-0">
+                                            <p className="font-medium truncate">{company.name}</p>
+                                            {company.description && (
+                                                <p className="text-xs text-muted-foreground line-clamp-1">{company.description}</p>
+                                            )}
+                                        </div>
+                                        {company.stage && (
+                                            <Badge variant="outline" className="text-[10px] shrink-0">{company.stage}</Badge>
+                                        )}
+                                    </div>
+                                    <div className="flex flex-wrap gap-1 mt-1">
+                                        {company.industryTags.slice(0, 2).map(tag => (
+                                            <Badge key={tag} variant="secondary" className="text-[10px]">{tag}</Badge>
+                                        ))}
+                                        {company.country && (
+                                            <Badge variant="secondary" className="text-[10px]">{company.country}</Badge>
+                                        )}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                    
+                    {selectedFromSearch && (
+                        <p className="text-xs text-emerald-600 flex items-center gap-1">
+                            <Check className="size-3" /> Company data loaded from Harmonic
+                        </p>
+                    )}
+                    {!selectedFromSearch && formData.name.length >= 2 && !isSearching && searchResults?.length === 0 && (
+                        <p className="text-xs text-muted-foreground">
+                            No matching companies found. You can continue with a new company.
+                        </p>
+                    )}
                     {errors.name && <p className="text-xs text-destructive">{errors.name}</p>}
                 </div>
                 
