@@ -18,7 +18,11 @@ import {
   Users,
   Lightbulb,
   TrendingUp,
-  Sparkles
+  Sparkles,
+  Radio,
+  Eye,
+  RefreshCw,
+  Lock
 } from "lucide-react";
 import methodologyImage from '@assets/generated_images/methodology_diagram_blending_four_colors.png';
 import miraInterfaceImage from '@assets/generated_images/ai_financial_assistant_interface.png';
@@ -54,7 +58,7 @@ export default function PlatformOverview() {
       </section>
 
       {/* Feature Grid */}
-      <section className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <section className="grid md:grid-cols-2 lg:grid-cols-5 gap-6">
         <FeatureCard 
           icon={<Calculator className="size-6 text-blue-500" />}
           title="Multi-Method Engine"
@@ -78,6 +82,12 @@ export default function PlatformOverview() {
           title="Investor Deal Room"
           description="Generate professional PDF reports and investment memos ready for sharing."
           link="/reports"
+        />
+        <FeatureCard 
+          icon={<Radio className="size-6 text-indigo-500" />}
+          title="Real-Time Collab"
+          description="Work together with your team. See live presence and instant updates as you build your valuation."
+          link="/calculator"
         />
       </section>
 
@@ -118,6 +128,62 @@ export default function PlatformOverview() {
             </Button>
         </div>
       </section>
+
+      {/* Real-Time Collaboration Section */}
+      <section className="grid lg:grid-cols-2 gap-12 items-center bg-gradient-to-br from-indigo-500/5 to-purple-500/5 rounded-3xl p-8 border border-white/5">
+        <div className="space-y-6">
+            <Badge className="bg-indigo-500/10 text-indigo-500 border-indigo-500/20">Team Feature</Badge>
+            <h2 className="text-3xl md:text-4xl font-bold font-heading">Real-Time Collaboration</h2>
+            <p className="text-lg text-muted-foreground">
+                Work together on valuations with your co-founders, advisors, or CFO. Changes sync instantly across all connected team members.
+            </p>
+            <ul className="space-y-3">
+                <li className="flex gap-3 items-start">
+                    <Eye className="size-5 text-indigo-500 mt-1" />
+                    <span><strong>Live Presence:</strong> See who's viewing the valuation in real-time with avatar indicators showing active collaborators.</span>
+                </li>
+                <li className="flex gap-3 items-start">
+                    <RefreshCw className="size-5 text-indigo-500 mt-1" />
+                    <span><strong>Instant Sync:</strong> When someone updates financials or scores, everyone sees the changes immediately—no refresh needed.</span>
+                </li>
+                <li className="flex gap-3 items-start">
+                    <Lock className="size-5 text-indigo-500 mt-1" />
+                    <span><strong>Secure Access:</strong> Only authenticated team members with verified company access can join collaboration sessions.</span>
+                </li>
+            </ul>
+        </div>
+        <div className="relative group">
+            <div className="absolute inset-0 bg-gradient-to-tr from-indigo-500/20 to-purple-500/20 blur-2xl rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
+            <Card className="relative z-10 border-white/10 bg-card/80 backdrop-blur">
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                        <Radio className="size-5 text-indigo-500 animate-pulse" />
+                        How It Works
+                    </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    <div className="flex items-center gap-3 p-3 rounded-lg bg-secondary/50">
+                        <div className="size-8 rounded-full bg-blue-500 flex items-center justify-center text-white text-sm font-bold">1</div>
+                        <p className="text-sm">Open the Calculator or Dashboard page</p>
+                    </div>
+                    <div className="flex items-center gap-3 p-3 rounded-lg bg-secondary/50">
+                        <div className="size-8 rounded-full bg-purple-500 flex items-center justify-center text-white text-sm font-bold">2</div>
+                        <p className="text-sm">Share the URL with your team members</p>
+                    </div>
+                    <div className="flex items-center gap-3 p-3 rounded-lg bg-secondary/50">
+                        <div className="size-8 rounded-full bg-indigo-500 flex items-center justify-center text-white text-sm font-bold">3</div>
+                        <p className="text-sm">See presence indicators as teammates join</p>
+                    </div>
+                    <div className="flex items-center gap-3 p-3 rounded-lg bg-secondary/50">
+                        <div className="size-8 rounded-full bg-emerald-500 flex items-center justify-center text-white text-sm font-bold">4</div>
+                        <p className="text-sm">Edit together—changes appear instantly for everyone</p>
+                    </div>
+                </CardContent>
+            </Card>
+        </div>
+      </section>
+
+      <Separator className="bg-border/50" />
 
       {/* Methodology Section */}
       <section className="grid lg:grid-cols-2 gap-12 items-center">
@@ -209,6 +275,12 @@ export default function PlatformOverview() {
                 <AccordionTrigger>What if I have no revenue yet?</AccordionTrigger>
                 <AccordionContent>
                    That's normal! For pre-revenue companies, our engine automatically prioritizes the "Scorecard Method" and "VC Method" which don't rely on current revenue multiples, but rather on team strength, market size, and future potential.
+                </AccordionContent>
+            </AccordionItem>
+            <AccordionItem value="item-6">
+                <AccordionTrigger>How does real-time collaboration work?</AccordionTrigger>
+                <AccordionContent>
+                   When you open the Calculator or Dashboard, you automatically join a secure collaboration room for your company. Any team members who log in and access the same valuation will see each other's presence (shown as avatar indicators). When anyone makes changes to financials or scores, those updates sync instantly to everyone in the room—no page refresh needed. Only authenticated users with verified access to your company can join, ensuring your data stays private.
                 </AccordionContent>
             </AccordionItem>
         </Accordion>
