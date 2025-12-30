@@ -20,16 +20,16 @@ import type { Comparable } from "@shared/schema";
 interface HarmonicCompany {
   id: string;
   name: string;
-  description: string;
-  sector: string;
-  stage: string;
-  region: string;
-  valuation: number;
-  revenue: number;
-  growth: number;
-  fundingTotal: number;
-  website: string;
-  tags: string[];
+  description: string | null;
+  sector: string | null;
+  stage: string | null;
+  region: string | null;
+  valuation: number | null;
+  fundingTotal: number | null;
+  lastFundingRound: string | null;
+  headcount: number | null;
+  website: string | null;
+  logoUrl: string | null;
 }
 
 export default function MarketComps() {
@@ -78,18 +78,24 @@ export default function MarketComps() {
     enabled: !!currentCompanyId
   });
 
+  // Build search params based on filters
+  const buildSearchParams = () => {
+    const params = new URLSearchParams({ limit: "50" });
+    if (selectedIndustryTags.length > 0) params.set("industryTags", selectedIndustryTags.join(','));
+    if (selectedTechTags.length > 0) params.set("technologyTags", selectedTechTags.join(','));
+    if (selectedStage && selectedStage !== "all-stages") {
+      const stageMapping = HARMONIC_FUNDING_STAGES.find(s => s.value === selectedStage);
+      if (stageMapping) params.set("stage", stageMapping.label);
+    }
+    if (selectedCountry && selectedCountry !== "all-countries") params.set("country", selectedCountry);
+    return params;
+  };
+
   // Fetch real Harmonic companies based on current filters
   const { data: harmonicComps = [], isLoading: isLoadingHarmonic, refetch: refetchHarmonic } = useQuery<HarmonicCompany[]>({
     queryKey: ['/api/harmonic/search', selectedIndustryTags, selectedTechTags, selectedStage, selectedCountry],
     queryFn: async () => {
-      const params = new URLSearchParams({ limit: "50" });
-      if (selectedIndustryTags.length > 0) params.set("industryTags", selectedIndustryTags.join(','));
-      if (selectedTechTags.length > 0) params.set("technologyTags", selectedTechTags.join(','));
-      if (selectedStage && selectedStage !== "all-stages") {
-        const stageMapping = HARMONIC_FUNDING_STAGES.find(s => s.value === selectedStage);
-        if (stageMapping) params.set("stage", stageMapping.label);
-      }
-      if (selectedCountry && selectedCountry !== "all-countries") params.set("country", selectedCountry);
+      const params = buildSearchParams();
       
       const res = await fetch(`/api/harmonic/search?${params}`);
       if (!res.ok) {
@@ -177,13 +183,13 @@ export default function MarketComps() {
     }
     createCompMutation.mutate({
       companyName: comp.name,
-      sector: comp.sector,
-      stage: comp.stage,
-      valuation: comp.valuation,
-      revenue: comp.revenue,
-      growthRate: comp.growth,
-      region: comp.region,
-      fundingRound: comp.stage,
+      sector: comp.sector || "Technology",
+      stage: comp.stage || "Unknown",
+      valuation: comp.valuation || comp.fundingTotal || 0,
+      revenue: 0, // Not available from Harmonic
+      growthRate: 0, // Not available from Harmonic
+      region: comp.region || "Unknown",
+      fundingRound: comp.lastFundingRound || comp.stage || "Unknown",
       source: "Harmonic"
     });
   };
@@ -451,37 +457,36 @@ export default function MarketComps() {
                                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                                 <XAxis 
                                     type="number" 
-                                    dataKey="revenue" 
-                                    name="Revenue" 
-                                    unit="$" 
+                                    dataKey="headcount" 
+                                    name="Headcount" 
                                     stroke="hsl(var(--muted-foreground))"
                                     fontSize={12}
-                                    tickFormatter={(value) => `${value/1000}k`}
+                                    tickFormatter={(value) => value ? `${value}` : '0'}
                                 />
                                 <YAxis 
                                     type="number" 
-                                    dataKey="valuation" 
-                                    name="Valuation" 
+                                    dataKey="fundingTotal" 
+                                    name="Total Funding" 
                                     unit="$" 
                                     stroke="hsl(var(--muted-foreground))"
                                     fontSize={12}
-                                    tickFormatter={(value) => `${value/1000000}M`}
+                                    tickFormatter={(value) => value ? `${value/1000000}M` : '0'}
                                 />
-                                <ZAxis type="number" dataKey="growth" range={[50, 400]} name="Growth" />
+                                <ZAxis type="number" dataKey="fundingTotal" range={[50, 400]} name="Funding" />
                                 <Tooltip 
                                     cursor={{ strokeDasharray: '3 3' }} 
                                     contentStyle={{ backgroundColor: 'hsl(var(--popover))', borderColor: 'hsl(var(--border))', borderRadius: '8px' }}
                                     formatter={(value: any, name: any) => [
-                                        name === 'Valuation' ? `$${value/1000000}M` : name === 'Revenue' ? `$${value/1000}k` : `${value}%`, 
+                                        name === 'Total Funding' ? `$${(value || 0)/1000000}M` : name === 'Headcount' ? `${value || 0}` : `$${(value || 0)/1000000}M`, 
                                         name
                                     ]}
                                 />
                                 <Legend />
-                                <Scatter name="Market Matches" data={filteredComps} fill="hsl(var(--muted-foreground))" fillOpacity={0.4} />
-                                <Scatter name="Selected Comps" data={savedComps} fill="hsl(var(--primary))" shape="circle" />
+                                <Scatter name="Market Matches" data={filteredComps.filter(c => c.headcount && c.fundingTotal)} fill="hsl(var(--muted-foreground))" fillOpacity={0.4} />
+                                <Scatter name="Selected Comps" data={savedComps.filter((c: Comparable) => c.valuation)} fill="hsl(var(--primary))" shape="circle" />
                                 <Scatter 
                                     name="Your Company" 
-                                    data={[{ revenue: financials.revenue || 600000, valuation: financials.lastRoundValuation || 12500000, growth: financials.growthRate || 15 }]} 
+                                    data={[{ headcount: 10, fundingTotal: financials.lastRoundValuation || 8500000 }]} 
                                     fill="hsl(var(--chart-2))" 
                                     shape="star" 
                                 />
@@ -527,13 +532,11 @@ export default function MarketComps() {
                                                 <div className="font-medium text-foreground">{comp.name}</div>
                                                 <div className="flex gap-2 mt-1 flex-wrap">
                                                     <Badge variant="outline" className="text-[10px] h-5 px-1.5">{comp.sector || 'Tech'}</Badge>
-                                                    <span className="text-xs text-muted-foreground">{comp.region}</span>
+                                                    <span className="text-xs text-muted-foreground">{comp.region || 'N/A'}</span>
                                                 </div>
-                                                {comp.tags && comp.tags.length > 0 && (
-                                                  <div className="flex gap-1 mt-1 flex-wrap">
-                                                    {comp.tags.slice(0, 2).map((tag, idx) => (
-                                                      <Badge key={idx} variant="secondary" className="text-[9px] h-4 px-1">{tag}</Badge>
-                                                    ))}
+                                                {comp.headcount && (
+                                                  <div className="text-xs text-muted-foreground mt-1">
+                                                    {comp.headcount} employees
                                                   </div>
                                                 )}
                                             </TableCell>
@@ -545,13 +548,15 @@ export default function MarketComps() {
                                                     </div>
                                                     <div className="flex justify-between w-32">
                                                         <span className="text-muted-foreground">Stage:</span>
-                                                        <span className="font-mono">{comp.stage}</span>
+                                                        <span className="font-mono">{comp.stage || 'N/A'}</span>
                                                     </div>
                                                 </div>
                                             </TableCell>
                                             <TableCell className="text-right">
-                                                <div className="font-mono font-medium">${((comp.valuation || 0) / 1000000).toFixed(1)}M</div>
-                                                <div className="text-xs text-muted-foreground">{comp.stage}</div>
+                                                <div className="font-mono font-medium">
+                                                  {comp.fundingTotal ? `$${(comp.fundingTotal / 1000000).toFixed(1)}M` : 'N/A'}
+                                                </div>
+                                                <div className="text-xs text-muted-foreground">{comp.lastFundingRound || comp.stage}</div>
                                             </TableCell>
                                             <TableCell className="text-right">
                                                 <Button size="sm" variant="secondary" onClick={() => addToMyComps(comp)}>
