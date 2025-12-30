@@ -1,5 +1,5 @@
 import { useValuation } from "@/context/ValuationContext";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useCollaboration } from "@/hooks/useCollaboration";
 import { PresenceIndicator } from "@/components/collaboration/PresenceIndicator";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
@@ -294,6 +294,71 @@ export default function ValuationEngine() {
     }, 2500);
   };
 
+  // Auto-save: debounce and save valuation when it changes significantly
+  const lastAutoSavedRef = useRef<number | null>(null);
+  const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const autoSavingRef = useRef(false);
+  const [autoSaving, setAutoSaving] = useState(false);
+
+  useEffect(() => {
+    // Only auto-save if not in demo mode and we have a company
+    if (isDemoMode || !currentCompanyId) return;
+    
+    // Skip if already saving to prevent duplicate saves
+    if (autoSavingRef.current) return;
+    
+    // Clear any pending auto-save timer
+    if (autoSaveTimerRef.current) {
+      clearTimeout(autoSaveTimerRef.current);
+      autoSaveTimerRef.current = null;
+    }
+    
+    // Check if valuation has changed significantly (more than 1% difference)
+    const hasSignificantChange = lastAutoSavedRef.current === null || 
+      Math.abs(blendedValuation - lastAutoSavedRef.current) / lastAutoSavedRef.current > 0.01;
+    
+    if (!hasSignificantChange) return;
+    
+    // Capture the value to save
+    const valueToSave = blendedValuation;
+    
+    // Debounce: wait 3 seconds before auto-saving
+    autoSaveTimerRef.current = setTimeout(async () => {
+      // Re-check significance inside timeout in case value changed back
+      const stillSignificant = lastAutoSavedRef.current === null || 
+        Math.abs(valueToSave - (lastAutoSavedRef.current || 0)) / (lastAutoSavedRef.current || 1) > 0.01;
+      
+      if (!stillSignificant || autoSavingRef.current) {
+        autoSaveTimerRef.current = null;
+        return;
+      }
+      
+      try {
+        autoSavingRef.current = true;
+        setAutoSaving(true);
+        lastAutoSavedRef.current = valueToSave; // Update ref before save to prevent re-triggers
+        setCalculatedValuation(valueToSave);
+        await saveValuation(`Auto-save ${new Date().toLocaleTimeString()}`, valueToSave);
+        // Silent success - don't toast for auto-saves
+      } catch (error) {
+        console.error("Auto-save failed:", error);
+        // Reset ref on failure so it can retry
+        lastAutoSavedRef.current = null;
+      } finally {
+        autoSavingRef.current = false;
+        setAutoSaving(false);
+        autoSaveTimerRef.current = null;
+      }
+    }, 3000);
+    
+    return () => {
+      if (autoSaveTimerRef.current) {
+        clearTimeout(autoSaveTimerRef.current);
+        autoSaveTimerRef.current = null;
+      }
+    };
+  }, [blendedValuation, isDemoMode, currentCompanyId, setCalculatedValuation, saveValuation]);
+
   const handleSaveReport = async () => {
     if (isDemoMode) {
       toast.info("Demo Mode", {
@@ -305,6 +370,7 @@ export default function ValuationEngine() {
     try {
       setCalculatedValuation(blendedValuation);
       await saveValuation(`Valuation - ${new Date().toLocaleDateString()}`, blendedValuation);
+      lastAutoSavedRef.current = blendedValuation; // Update ref to prevent duplicate auto-save
       toast.success("Report Saved", {
         description: "Valuation report has been saved to your dashboard.",
         action: {
@@ -336,6 +402,11 @@ export default function ValuationEngine() {
           </div>
           <div className="flex items-center gap-3 w-full sm:w-auto">
               <PresenceIndicator collaborators={collaborators} isConnected={isConnected} />
+              {autoSaving && (
+                <span className="text-xs text-muted-foreground flex items-center gap-1">
+                  <Loader2 className="size-3 animate-spin" /> Saving...
+                </span>
+              )}
               <Button onClick={handleSaveReport} className="gap-2 shadow-lg shadow-primary/20 hover:shadow-primary/40 transition-shadow flex-1 sm:flex-none" data-testid="button-save-valuation">
                 <Plus className="size-4" /> Save as Report
               </Button>
