@@ -4,6 +4,8 @@ import {
   valuationSnapshots,
   scenarios,
   comparables,
+  companyMembers,
+  companyInvites,
   type Company,
   type InsertCompany,
   type ValuationSnapshot,
@@ -11,10 +13,14 @@ import {
   type Scenario,
   type InsertScenario,
   type Comparable,
-  type InsertComparable
+  type InsertComparable,
+  type CompanyMember,
+  type InsertCompanyMember,
+  type CompanyInvite,
+  type InsertCompanyInvite
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, and } from "drizzle-orm";
+import { eq, desc, and, or } from "drizzle-orm";
 
 export interface IStorage {
   // Companies (scoped by userId)
@@ -44,6 +50,21 @@ export interface IStorage {
   createComparable(comparable: InsertComparable): Promise<Comparable>;
   updateComparable(id: string, comparable: Partial<InsertComparable>): Promise<Comparable | undefined>;
   deleteComparable(id: string): Promise<boolean>;
+  
+  // Team Members
+  getCompanyMembers(companyId: string): Promise<CompanyMember[]>;
+  addCompanyMember(member: InsertCompanyMember): Promise<CompanyMember>;
+  removeCompanyMember(companyId: string, userId: string): Promise<boolean>;
+  isCompanyMember(companyId: string, userId: string): Promise<boolean>;
+  hasCompanyAccess(companyId: string, userId: string): Promise<boolean>;
+  
+  // Invites
+  getCompanyInvites(companyId: string): Promise<CompanyInvite[]>;
+  getPendingInvitesByEmail(email: string): Promise<CompanyInvite[]>;
+  getInviteByToken(token: string): Promise<CompanyInvite | undefined>;
+  createInvite(invite: InsertCompanyInvite): Promise<CompanyInvite>;
+  updateInviteStatus(id: string, status: string): Promise<CompanyInvite | undefined>;
+  deleteInvite(id: string): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -192,6 +213,96 @@ export class DatabaseStorage implements IStorage {
   
   async deleteComparable(id: string): Promise<boolean> {
     const result = await db.delete(comparables).where(eq(comparables.id, id));
+    return result.rowCount ? result.rowCount > 0 : false;
+  }
+  
+  // Team Members
+  async getCompanyMembers(companyId: string): Promise<CompanyMember[]> {
+    return await db
+      .select()
+      .from(companyMembers)
+      .where(eq(companyMembers.companyId, companyId))
+      .orderBy(desc(companyMembers.joinedAt));
+  }
+  
+  async addCompanyMember(member: InsertCompanyMember): Promise<CompanyMember> {
+    const [newMember] = await db
+      .insert(companyMembers)
+      .values(member)
+      .returning();
+    return newMember;
+  }
+  
+  async removeCompanyMember(companyId: string, userId: string): Promise<boolean> {
+    const result = await db
+      .delete(companyMembers)
+      .where(and(eq(companyMembers.companyId, companyId), eq(companyMembers.userId, userId)));
+    return result.rowCount ? result.rowCount > 0 : false;
+  }
+  
+  async isCompanyMember(companyId: string, userId: string): Promise<boolean> {
+    const [member] = await db
+      .select()
+      .from(companyMembers)
+      .where(and(eq(companyMembers.companyId, companyId), eq(companyMembers.userId, userId)));
+    return !!member;
+  }
+  
+  async hasCompanyAccess(companyId: string, userId: string): Promise<boolean> {
+    // Check if user is either the owner or a member
+    const [company] = await db
+      .select()
+      .from(companies)
+      .where(and(eq(companies.id, companyId), eq(companies.userId, userId)));
+    
+    if (company) return true;
+    
+    return await this.isCompanyMember(companyId, userId);
+  }
+  
+  // Invites
+  async getCompanyInvites(companyId: string): Promise<CompanyInvite[]> {
+    return await db
+      .select()
+      .from(companyInvites)
+      .where(eq(companyInvites.companyId, companyId))
+      .orderBy(desc(companyInvites.createdAt));
+  }
+  
+  async getPendingInvitesByEmail(email: string): Promise<CompanyInvite[]> {
+    return await db
+      .select()
+      .from(companyInvites)
+      .where(and(eq(companyInvites.inviteEmail, email), eq(companyInvites.status, "pending")));
+  }
+  
+  async getInviteByToken(token: string): Promise<CompanyInvite | undefined> {
+    const [invite] = await db
+      .select()
+      .from(companyInvites)
+      .where(eq(companyInvites.inviteToken, token));
+    return invite || undefined;
+  }
+  
+  async createInvite(invite: InsertCompanyInvite): Promise<CompanyInvite> {
+    const [newInvite] = await db
+      .insert(companyInvites)
+      .values(invite)
+      .returning();
+    return newInvite;
+  }
+  
+  async updateInviteStatus(id: string, status: string): Promise<CompanyInvite | undefined> {
+    const [invite] = await db
+      .update(companyInvites)
+      .set({ status })
+      .where(eq(companyInvites.id, id))
+      .returning();
+    return invite || undefined;
+  }
+  
+  async deleteInvite(id: string): Promise<boolean> {
+    const result = await db.delete(companyInvites).where(eq(companyInvites.id, id));
     return result.rowCount ? result.rowCount > 0 : false;
   }
 }
