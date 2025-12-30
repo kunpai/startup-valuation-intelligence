@@ -323,3 +323,138 @@ export async function getCompanyByDomain(domain: string): Promise<CompanySearchR
     return null;
   }
 }
+
+export interface CompanyNameSearchResult {
+  id: string;
+  name: string;
+  description: string | null;
+  sector: string | null;
+  stage: string | null;
+  region: string | null;
+  country: string | null;
+  fundingTotal: number | null;
+  lastFundingRound: string | null;
+  headcount: number | null;
+  website: string | null;
+  logoUrl: string | null;
+  industryTags: string[];
+  technologyTags: string[];
+  customerType: string | null;
+  foundedYear: number | null;
+}
+
+function transformToNameSearchResult(company: HarmonicCompany): CompanyNameSearchResult {
+  const industryTags = (company.tags || [])
+    .filter(t => t.type === "INDUSTRY" || t.type === "MARKET_VERTICAL")
+    .map(t => t.display_value);
+  
+  const technologyTags = (company.tags || [])
+    .filter(t => t.type === "TECHNOLOGY")
+    .map(t => t.display_value);
+
+  return {
+    id: company.entity_urn,
+    name: company.name,
+    description: company.description,
+    sector: extractPrimaryIndustry(company.tags || []),
+    stage: mapStage(company.funding?.funding_stage || company.stage),
+    region: mapRegion(company.location),
+    country: company.location?.country || null,
+    fundingTotal: company.funding?.funding_total || null,
+    lastFundingRound: company.funding?.last_funding_type || null,
+    headcount: company.headcount,
+    website: company.website?.domain || null,
+    logoUrl: company.logo_url,
+    industryTags,
+    technologyTags,
+    customerType: company.customer_type,
+    foundedYear: null, // Harmonic doesn't seem to return this directly
+  };
+}
+
+export async function searchCompaniesByName(query: string, limit: number = 10): Promise<CompanyNameSearchResult[]> {
+  if (!HARMONIC_API_KEY) {
+    console.error("HARMONIC_API_KEY not configured");
+    return [];
+  }
+
+  if (!query || query.trim().length < 2) {
+    return [];
+  }
+
+  try {
+    console.log(`[harmonic] Searching companies by name: "${query}"`);
+    
+    // Use the search endpoint with a name filter
+    const searchResponse = await fetch(`${HARMONIC_BASE_URL}/search/companies`, {
+      method: "POST",
+      headers: {
+        "apikey": HARMONIC_API_KEY,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        query: {
+          filter_group: {
+            filters: [
+              {
+                filter_type: "COMPANY_TEXT_SEARCH",
+                value: query.trim()
+              }
+            ],
+            join_operator: "and"
+          },
+          pagination: {
+            page_size: limit * 3 // Get more than needed for better matching
+          }
+        }
+      }),
+    });
+
+    if (!searchResponse.ok) {
+      const errorText = await searchResponse.text();
+      console.error("[harmonic] Name search failed:", errorText);
+      return [];
+    }
+
+    const searchData = await searchResponse.json() as { results: string[], count: number };
+    console.log(`[harmonic] Name search returned ${searchData.results?.length || 0} URNs`);
+    
+    if (!searchData.results || searchData.results.length === 0) {
+      return [];
+    }
+
+    // Get company details for the search results
+    const urnsToFetch = searchData.results.slice(0, limit * 2);
+    const batchResponse = await fetch(`${HARMONIC_BASE_URL}/companies/batchGet`, {
+      method: "POST",
+      headers: {
+        "apikey": HARMONIC_API_KEY,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        urns: urnsToFetch,
+      }),
+    });
+
+    if (!batchResponse.ok) {
+      const errorText = await batchResponse.text();
+      console.error("[harmonic] Batch get failed:", errorText);
+      return [];
+    }
+
+    const companies = await batchResponse.json() as HarmonicCompany[];
+    console.log(`[harmonic] Got ${companies.length} company details for name search`);
+    
+    // Filter and sort by name relevance
+    const results = companies
+      .map(transformToNameSearchResult)
+      .filter(c => c.name && c.name.toLowerCase().includes(query.toLowerCase()))
+      .slice(0, limit);
+
+    console.log(`[harmonic] Returning ${results.length} name-matched companies`);
+    return results;
+  } catch (error) {
+    console.error("[harmonic] Name search API error:", error);
+    return [];
+  }
+}

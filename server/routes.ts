@@ -5,7 +5,7 @@ import { insertCompanySchema, insertValuationSnapshotSchema, insertScenarioSchem
 import { registerMiraRoutes } from "./mira";
 import { calculateValuation, type ValuationInput } from "./valuation";
 import { isAuthenticated } from "./replit_integrations/auth";
-import { searchCompanies, getCompanyByDomain } from "./harmonic";
+import { searchCompanies, getCompanyByDomain, searchCompaniesByName } from "./harmonic";
 import crypto from "crypto";
 
 // Get user email from authenticated request
@@ -560,6 +560,23 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Error looking up company:", error);
       res.status(500).json({ error: "Failed to lookup company" });
+    }
+  });
+
+  // Search companies by name (for autocomplete)
+  app.get("/api/harmonic/search-by-name", isAuthenticated, async (req, res) => {
+    try {
+      const { q, limit } = req.query;
+      
+      if (!q || typeof q !== 'string' || q.trim().length < 2) {
+        return res.json([]);
+      }
+      
+      const results = await searchCompaniesByName(q, limit ? parseInt(limit as string) : 10);
+      res.json(results);
+    } catch (error) {
+      console.error("Error searching companies by name:", error);
+      res.status(500).json({ error: "Failed to search companies" });
     }
   });
 
