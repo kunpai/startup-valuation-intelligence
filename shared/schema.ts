@@ -10,12 +10,22 @@ export * from "./models/auth";
 // Companies table - scoped to authenticated users
 export const companies = pgTable("companies", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  userId: varchar("user_id").notNull(), // Links company to authenticated user
+  userId: varchar("user_id").notNull(),
   name: text("name").notNull(),
   sector: text("sector").notNull(),
   stage: text("stage").notNull(),
   region: text("region").notNull(),
   foundedYear: integer("founded_year").notNull(),
+  
+  // Harmonic-aligned profile fields for better comp matching
+  industryTags: text("industry_tags").array(), // e.g., ["Business Software Services", "Financial Technology"]
+  technologyTags: text("technology_tags").array(), // e.g., ["AI / ML", "SaaS"]
+  customerType: text("customer_type"), // e.g., "B2B", "B2C", "B2B2C"
+  revenueModel: text("revenue_model"), // e.g., "subscription", "marketplace"
+  targetCustomerSize: text("target_customer_size"), // e.g., "smb", "enterprise"
+  country: text("country"), // e.g., "United States" - more specific than region
+  description: text("description"), // Brief company description for context
+  
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
