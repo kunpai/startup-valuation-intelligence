@@ -11,8 +11,20 @@ import { Slider } from "@/components/ui/slider";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { SECTORS, STAGES, REGIONS, METHODOLOGY_DESCRIPTIONS, MOCK_COMPS } from "@/lib/constants";
-import { ArrowRight, Check, Sparkles, Building2, TrendingUp, Users, Rocket, History, Scale, Briefcase, Plus, Trash2, ArrowLeft, AlertCircle, Loader2, Search } from "lucide-react";
+import { 
+  INDUSTRY_TAGS, 
+  TECHNOLOGY_TAGS, 
+  HARMONIC_FUNDING_STAGES, 
+  CUSTOMER_TYPES, 
+  REVENUE_MODELS, 
+  TARGET_CUSTOMER_SIZES, 
+  COUNTRIES,
+  REGIONS,
+  METHODOLOGY_DESCRIPTIONS, 
+  MOCK_COMPS,
+  STAGES
+} from "@/lib/constants";
+import { ArrowRight, Check, Sparkles, Building2, TrendingUp, Users, Rocket, History, Scale, Briefcase, Plus, Trash2, ArrowLeft, AlertCircle, Loader2, Search, Target, Globe, Layers } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { z } from "zod";
 
@@ -33,34 +45,48 @@ interface HarmonicCompany {
 
 const basicsSchema = z.object({
   name: z.string().min(1, "Company name is required"),
-  sector: z.string().min(1, "Please select a sector"),
-  stage: z.string().min(1, "Please select a stage"),
-  region: z.string().min(1, "Please select a region"),
   foundedYear: z.number().min(1900, "Please select a founded year")
 });
 
+const businessModelSchema = z.object({
+  industryTags: z.array(z.string()).min(1, "Please select at least one industry"),
+  customerType: z.string().min(1, "Please select a customer type"),
+  stage: z.string().min(1, "Please select your funding stage")
+});
+
 function CompsStep({ formData, togglePeer }: { 
-  formData: { sector: string; stage: string; region: string; selectedPeers: string[] }; 
+  formData: { 
+    industryTags: string[]; 
+    technologyTags: string[];
+    stage: string; 
+    country: string;
+    selectedPeers: string[] 
+  }; 
   togglePeer: (name: string) => void 
 }) {
+  const stageLabel = HARMONIC_FUNDING_STAGES.find(s => s.value === formData.stage)?.label || formData.stage;
+  const region = COUNTRIES.find(c => c.value === formData.country)?.region;
+  
   const { data: harmonicComps, isLoading, error } = useQuery<HarmonicCompany[]>({
-    queryKey: ["/api/harmonic/search", formData.sector, formData.stage, formData.region],
+    queryKey: ["/api/harmonic/search", formData.industryTags, formData.technologyTags, formData.stage, formData.country],
     queryFn: async () => {
-      const params = new URLSearchParams({ limit: "15" });
-      if (formData.sector) params.set("sector", formData.sector);
-      if (formData.stage) params.set("stage", formData.stage);
-      if (formData.region) params.set("region", formData.region);
+      const params = new URLSearchParams({ limit: "20" });
+      if (formData.industryTags.length > 0) params.set("industryTags", formData.industryTags.join(','));
+      if (formData.technologyTags.length > 0) params.set("technologyTags", formData.technologyTags.join(','));
+      if (formData.stage) params.set("stage", stageLabel);
+      if (formData.country) params.set("country", formData.country);
+      if (region) params.set("region", region);
       const res = await fetch(`/api/harmonic/search?${params}`, { credentials: "include" });
       if (!res.ok) throw new Error("Failed to fetch");
       return res.json();
     },
     staleTime: 60000,
-    enabled: !!formData.sector,
+    enabled: formData.industryTags.length > 0 || formData.technologyTags.length > 0,
   });
 
   const companies = harmonicComps && harmonicComps.length > 0 
     ? harmonicComps 
-    : MOCK_COMPS.filter(c => c.sector === formData.sector).map(c => ({
+    : MOCK_COMPS.slice(0, 10).map(c => ({
         id: c.company,
         name: c.company,
         description: null,
@@ -88,9 +114,20 @@ function CompsStep({ formData, togglePeer }: {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Search className="size-4 text-muted-foreground" />
-          <Label>Similar Companies ({formData.sector})</Label>
+          <Label>Similar Companies</Label>
         </div>
         <span className="text-xs text-muted-foreground">{formData.selectedPeers.length}/5 selected</span>
+      </div>
+      
+      <div className="text-xs text-muted-foreground bg-secondary/30 rounded p-2 flex flex-wrap gap-1">
+        <span>Matching:</span>
+        {formData.industryTags.slice(0, 2).map(tag => (
+          <Badge key={tag} variant="secondary" className="text-[10px]">{tag}</Badge>
+        ))}
+        {formData.technologyTags.slice(0, 2).map(tag => (
+          <Badge key={tag} variant="outline" className="text-[10px]">{tag}</Badge>
+        ))}
+        {stageLabel && <Badge variant="secondary" className="text-[10px]">{stageLabel}</Badge>}
       </div>
       
       <div className="grid gap-3 h-[300px] overflow-y-auto pr-2">
@@ -136,8 +173,8 @@ function CompsStep({ formData, togglePeer }: {
           ))
         ) : (
           <div className="text-center py-8 text-muted-foreground">
-            <p>No companies found for this sector.</p>
-            <p className="text-xs mt-2">Try adjusting your sector in Step 1.</p>
+            <p>No companies found matching your criteria.</p>
+            <p className="text-xs mt-2">Try selecting different industries or stages.</p>
           </div>
         )}
       </div>
@@ -162,14 +199,26 @@ export default function Onboarding() {
   const [step, setStep] = useState(0);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  // Temporary local state for inputs before committing to context
   const [formData, setFormData] = useState({
     // Basics
     name: "",
-    sector: SECTORS[0],
-    stage: STAGES[1],
-    region: REGIONS[0],
     foundedYear: new Date().getFullYear(),
+    description: "",
+    
+    // Business Model (Harmonic-aligned)
+    industryTags: [] as string[],
+    technologyTags: [] as string[],
+    customerType: "",
+    revenueModel: "",
+    targetCustomerSize: "",
+    
+    // Location & Stage
+    country: "United States",
+    stage: "SEED",
+    
+    // Legacy fields (computed from new fields)
+    sector: "",
+    region: "North America",
     
     // History
     hasHistory: false,
@@ -194,16 +243,43 @@ export default function Onboarding() {
     marketScore: 50
   });
 
+  // Derive legacy fields from new fields
+  useEffect(() => {
+    const countryData = COUNTRIES.find(c => c.value === formData.country);
+    const stageData = HARMONIC_FUNDING_STAGES.find(s => s.value === formData.stage);
+    setFormData(prev => ({
+      ...prev,
+      region: countryData?.region || "North America",
+      sector: prev.industryTags[0] || "Business Software Services"
+    }));
+  }, [formData.country, formData.stage, formData.industryTags]);
+
   const validateStep = (currentStep: number): boolean => {
     setErrors({});
     
     if (currentStep === 1) {
       const result = basicsSchema.safeParse({
         name: formData.name,
-        sector: formData.sector,
-        stage: formData.stage,
-        region: formData.region,
         foundedYear: formData.foundedYear
+      });
+      
+      if (!result.success) {
+        const newErrors: Record<string, string> = {};
+        result.error.errors.forEach(err => {
+          if (err.path[0]) {
+            newErrors[err.path[0] as string] = err.message;
+          }
+        });
+        setErrors(newErrors);
+        return false;
+      }
+    }
+    
+    if (currentStep === 2) {
+      const result = businessModelSchema.safeParse({
+        industryTags: formData.industryTags,
+        customerType: formData.customerType,
+        stage: formData.stage
       });
       
       if (!result.success) {
@@ -237,14 +313,22 @@ export default function Onboarding() {
   };
 
   const handleComplete = async () => {
-    // Pass all data directly to completeOnboarding to avoid state timing issues
+    const stageLabel = HARMONIC_FUNDING_STAGES.find(s => s.value === formData.stage)?.label || "Seed";
+    
     await completeOnboarding({
       profile: {
         name: formData.name,
-        sector: formData.sector,
-        stage: formData.stage,
+        sector: formData.industryTags[0] || "Business Software Services",
+        stage: stageLabel,
         region: formData.region,
-        foundedYear: formData.foundedYear
+        foundedYear: formData.foundedYear,
+        industryTags: formData.industryTags,
+        technologyTags: formData.technologyTags,
+        customerType: formData.customerType,
+        revenueModel: formData.revenueModel,
+        targetCustomerSize: formData.targetCustomerSize,
+        country: formData.country,
+        description: formData.description
       },
       financials: {
         revenue: formData.revenue,
@@ -300,6 +384,22 @@ export default function Onboarding() {
         }
     }
   };
+  
+  const toggleIndustryTag = (tag: string) => {
+    if (formData.industryTags.includes(tag)) {
+      setFormData({...formData, industryTags: formData.industryTags.filter(t => t !== tag)});
+    } else if (formData.industryTags.length < 3) {
+      setFormData({...formData, industryTags: [...formData.industryTags, tag]});
+    }
+  };
+  
+  const toggleTechnologyTag = (tag: string) => {
+    if (formData.technologyTags.includes(tag)) {
+      setFormData({...formData, technologyTags: formData.technologyTags.filter(t => t !== tag)});
+    } else if (formData.technologyTags.length < 3) {
+      setFormData({...formData, technologyTags: [...formData.technologyTags, tag]});
+    }
+  };
 
   const steps = [
     // Step 0: Welcome
@@ -332,10 +432,10 @@ export default function Onboarding() {
             </div>
 
             <div className="flex flex-col gap-4 max-w-sm mx-auto pt-8">
-                <Button size="lg" className="w-full text-lg h-12 gap-2 shadow-xl shadow-primary/20 hover:scale-105 transition-all" onClick={handleNext}>
+                <Button size="lg" className="w-full text-lg h-12 gap-2 shadow-xl shadow-primary/20 hover:scale-105 transition-all" onClick={handleNext} data-testid="button-start">
                     Start Valuation <ArrowRight className="size-5" />
                 </Button>
-                <Button variant="ghost" className="w-full text-muted-foreground hover:text-foreground" onClick={handleDemoMode}>
+                <Button variant="ghost" className="w-full text-muted-foreground hover:text-foreground" onClick={handleDemoMode} data-testid="button-demo">
                     View Sample Dashboard
                 </Button>
             </div>
@@ -346,7 +446,7 @@ export default function Onboarding() {
     {
         id: "basics",
         title: "Company Basics",
-        description: "Let's establish your company profile.",
+        description: "Tell us about your startup.",
         icon: <Building2 className="size-6 text-primary" />,
         content: (
             <div className="space-y-6">
@@ -364,50 +464,41 @@ export default function Onboarding() {
                         onChange={(e) => setFormData({...formData, name: e.target.value})}
                         autoFocus
                         className={`text-lg ${errors.name ? 'border-destructive focus-visible:ring-destructive' : ''}`}
-                        aria-required="true"
+                        data-testid="input-company-name"
                     />
                     {errors.name && <p className="text-xs text-destructive">{errors.name}</p>}
+                </div>
+                
+                <div className="space-y-2">
+                    <Label>Brief Description</Label>
+                    <Input 
+                        placeholder="e.g. AI-powered sales automation platform" 
+                        value={formData.description}
+                        onChange={(e) => setFormData({...formData, description: e.target.value})}
+                        className="text-sm"
+                        data-testid="input-description"
+                    />
+                    <p className="text-xs text-muted-foreground">One line about what you do</p>
                 </div>
                 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-2">
                         <Label>Founded Year <span className="text-destructive">*</span></Label>
                         <Select value={formData.foundedYear.toString()} onValueChange={(v) => setFormData({...formData, foundedYear: parseInt(v)})}>
-                            <SelectTrigger className={errors.foundedYear ? 'border-destructive' : ''}><SelectValue /></SelectTrigger>
+                            <SelectTrigger className={errors.foundedYear ? 'border-destructive' : ''} data-testid="select-founded-year"><SelectValue /></SelectTrigger>
                             <SelectContent>
-                                {Array.from({length: 10}, (_, i) => new Date().getFullYear() - i).map(y => (
+                                {Array.from({length: 15}, (_, i) => new Date().getFullYear() - i).map(y => (
                                     <SelectItem key={y} value={y.toString()}>{y}</SelectItem>
                                 ))}
                             </SelectContent>
                         </Select>
                     </div>
                     <div className="space-y-2">
-                        <Label>Region <span className="text-destructive">*</span></Label>
-                        <Select value={formData.region} onValueChange={(v) => setFormData({...formData, region: v})}>
-                            <SelectTrigger className={errors.region ? 'border-destructive' : ''}><SelectValue /></SelectTrigger>
+                        <Label>Country <span className="text-destructive">*</span></Label>
+                        <Select value={formData.country} onValueChange={(v) => setFormData({...formData, country: v})}>
+                            <SelectTrigger data-testid="select-country"><SelectValue /></SelectTrigger>
                             <SelectContent>
-                                {REGIONS.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}
-                            </SelectContent>
-                        </Select>
-                    </div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                        <Label>Sector <span className="text-destructive">*</span></Label>
-                        <Select value={formData.sector} onValueChange={(v) => setFormData({...formData, sector: v})}>
-                            <SelectTrigger className={errors.sector ? 'border-destructive' : ''}><SelectValue /></SelectTrigger>
-                            <SelectContent>
-                                {SECTORS.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-                            </SelectContent>
-                        </Select>
-                    </div>
-                    <div className="space-y-2">
-                        <Label>Current Stage <span className="text-destructive">*</span></Label>
-                        <Select value={formData.stage} onValueChange={(v) => setFormData({...formData, stage: v})}>
-                            <SelectTrigger className={errors.stage ? 'border-destructive' : ''}><SelectValue /></SelectTrigger>
-                            <SelectContent>
-                                {STAGES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                                {COUNTRIES.map(c => <SelectItem key={c.value} value={c.value}>{c.value} ({c.region})</SelectItem>)}
                             </SelectContent>
                         </Select>
                     </div>
@@ -415,7 +506,111 @@ export default function Onboarding() {
             </div>
         )
     },
-    // Step 2: History
+    // Step 2: Business Model
+    {
+        id: "business_model",
+        title: "Business Model",
+        description: "Help us find the right comparables by describing your business.",
+        icon: <Target className="size-6 text-orange-500" />,
+        content: (
+            <div className="space-y-6">
+                {Object.keys(errors).length > 0 && (
+                    <div className="bg-destructive/10 border border-destructive/30 text-destructive rounded-lg p-3 flex items-center gap-2 text-sm">
+                        <AlertCircle className="size-4 flex-shrink-0" />
+                        <span>Please fill in all required fields to continue.</span>
+                    </div>
+                )}
+                
+                <div className="space-y-2">
+                    <Label className="flex items-center gap-2">
+                        <Layers className="size-4" />
+                        Industry <span className="text-destructive">*</span>
+                        <span className="text-xs text-muted-foreground ml-auto">{formData.industryTags.length}/3 selected</span>
+                    </Label>
+                    <div className="flex flex-wrap gap-2 p-3 border rounded-lg bg-secondary/20 max-h-[140px] overflow-y-auto">
+                        {INDUSTRY_TAGS.map(tag => (
+                            <Badge 
+                                key={tag}
+                                variant={formData.industryTags.includes(tag) ? "default" : "outline"}
+                                className={`cursor-pointer transition-all ${formData.industryTags.includes(tag) ? 'bg-primary' : 'hover:bg-primary/10'}`}
+                                onClick={() => toggleIndustryTag(tag)}
+                                data-testid={`tag-industry-${tag}`}
+                            >
+                                {formData.industryTags.includes(tag) && <Check className="size-3 mr-1" />}
+                                {tag}
+                            </Badge>
+                        ))}
+                    </div>
+                    {errors.industryTags && <p className="text-xs text-destructive">{errors.industryTags}</p>}
+                </div>
+                
+                <div className="space-y-2">
+                    <Label className="flex items-center gap-2">
+                        <Rocket className="size-4" />
+                        Technology Focus
+                        <span className="text-xs text-muted-foreground ml-auto">{formData.technologyTags.length}/3 selected</span>
+                    </Label>
+                    <div className="flex flex-wrap gap-2 p-3 border rounded-lg bg-secondary/20 max-h-[120px] overflow-y-auto">
+                        {TECHNOLOGY_TAGS.map(tag => (
+                            <Badge 
+                                key={tag}
+                                variant={formData.technologyTags.includes(tag) ? "default" : "outline"}
+                                className={`cursor-pointer transition-all ${formData.technologyTags.includes(tag) ? 'bg-purple-600' : 'hover:bg-purple-600/10'}`}
+                                onClick={() => toggleTechnologyTag(tag)}
+                                data-testid={`tag-tech-${tag}`}
+                            >
+                                {formData.technologyTags.includes(tag) && <Check className="size-3 mr-1" />}
+                                {tag}
+                            </Badge>
+                        ))}
+                    </div>
+                </div>
+                
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                        <Label>Customer Type <span className="text-destructive">*</span></Label>
+                        <Select value={formData.customerType} onValueChange={(v) => setFormData({...formData, customerType: v})}>
+                            <SelectTrigger className={errors.customerType ? 'border-destructive' : ''} data-testid="select-customer-type"><SelectValue placeholder="Who do you sell to?" /></SelectTrigger>
+                            <SelectContent>
+                                {CUSTOMER_TYPES.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <div className="space-y-2">
+                        <Label>Revenue Model</Label>
+                        <Select value={formData.revenueModel} onValueChange={(v) => setFormData({...formData, revenueModel: v})}>
+                            <SelectTrigger data-testid="select-revenue-model"><SelectValue placeholder="How do you make money?" /></SelectTrigger>
+                            <SelectContent>
+                                {REVENUE_MODELS.map(r => <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>)}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                </div>
+                
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                        <Label>Target Customer Size</Label>
+                        <Select value={formData.targetCustomerSize} onValueChange={(v) => setFormData({...formData, targetCustomerSize: v})}>
+                            <SelectTrigger data-testid="select-target-size"><SelectValue placeholder="Your ideal customers" /></SelectTrigger>
+                            <SelectContent>
+                                {TARGET_CUSTOMER_SIZES.map(s => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <div className="space-y-2">
+                        <Label>Current Stage <span className="text-destructive">*</span></Label>
+                        <Select value={formData.stage} onValueChange={(v) => setFormData({...formData, stage: v})}>
+                            <SelectTrigger className={errors.stage ? 'border-destructive' : ''} data-testid="select-stage"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                                {HARMONIC_FUNDING_STAGES.map(s => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                </div>
+            </div>
+        )
+    },
+    // Step 3: History
     {
         id: "history",
         title: "Funding History",
@@ -428,6 +623,7 @@ export default function Onboarding() {
                         id="hasHistory" 
                         checked={formData.hasHistory}
                         onCheckedChange={(c) => setFormData({...formData, hasHistory: c === true})}
+                        data-testid="checkbox-has-history"
                     />
                     <label
                         htmlFor="hasHistory"
@@ -465,7 +661,7 @@ export default function Onboarding() {
                                 </div>
                             </div>
                         ))}
-                        <Button variant="outline" size="sm" className="w-full border-dashed gap-2" onClick={addHistoryItem}>
+                        <Button variant="outline" size="sm" className="w-full border-dashed gap-2" onClick={addHistoryItem} data-testid="button-add-round">
                             <Plus className="size-4" /> Add Past Round
                         </Button>
                     </div>
@@ -473,7 +669,7 @@ export default function Onboarding() {
             </div>
         )
     },
-    // Step 3: Methodology
+    // Step 4: Methodology
     {
         id: "methodology",
         title: "Valuation Approach",
@@ -484,7 +680,7 @@ export default function Onboarding() {
                 <RadioGroup value={formData.methodology} onValueChange={(v) => setFormData({...formData, methodology: v})} className="space-y-3">
                     {METHODOLOGY_DESCRIPTIONS.map((method) => (
                         <div key={method.id} className={`flex items-start space-x-3 space-y-0 rounded-md border p-4 transition-all hover:bg-accent/50 ${formData.methodology === method.id ? 'border-primary bg-primary/5 ring-1 ring-primary/20' : ''}`}>
-                             <RadioGroupItem value={method.id} id={method.id} className="mt-1" />
+                             <RadioGroupItem value={method.id} id={method.id} className="mt-1" data-testid={`radio-method-${method.id}`} />
                              <div className="space-y-1">
                                  <Label htmlFor={method.id} className="font-semibold text-base cursor-pointer">
                                      {method.name}
@@ -508,15 +704,15 @@ export default function Onboarding() {
             </div>
         )
     },
-    // Step 4: Comps Selection
+    // Step 5: Comps Selection
     {
         id: "comps",
         title: "Market Peers",
-        description: "Select up to 5 similar companies to benchmark against.",
-        icon: <Briefcase className="size-6 text-blue-500" />,
+        description: "Select similar companies to benchmark against.",
+        icon: <Users className="size-6 text-amber-500" />,
         content: <CompsStep formData={formData} togglePeer={togglePeer} />
     },
-    // Step 5: Financials
+    // Step 6: Financials
     {
         id: "financials",
         title: "Key Metrics",
@@ -526,155 +722,142 @@ export default function Onboarding() {
             <div className="space-y-6">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                        <Label>Annual Revenue (ARR)</Label>
-                        <div className="relative">
-                            <span className="absolute left-3 top-2.5 text-muted-foreground">$</span>
-                            <Input 
-                                type="number" 
-                                className="pl-7" 
-                                value={formData.revenue || ""}
-                                onChange={(e) => setFormData({...formData, revenue: Number(e.target.value)})}
-                            />
-                        </div>
+                        <Label>Annual Revenue ($)</Label>
+                        <Input 
+                            type="number" 
+                            placeholder="0" 
+                            value={formData.revenue || ""} 
+                            onChange={(e) => setFormData({...formData, revenue: Number(e.target.value)})} 
+                            data-testid="input-revenue"
+                        />
+                        <p className="text-xs text-muted-foreground">ARR or annualized run rate</p>
                     </div>
                     <div className="space-y-2">
-                        <Label>Monthly Burn</Label>
-                        <div className="relative">
-                            <span className="absolute left-3 top-2.5 text-muted-foreground">$</span>
-                            <Input 
-                                type="number" 
-                                className="pl-7" 
-                                value={formData.burnRate || ""}
-                                onChange={(e) => setFormData({...formData, burnRate: Number(e.target.value)})}
-                            />
-                        </div>
+                        <Label>Last Round Valuation ($)</Label>
+                        <Input 
+                            type="number" 
+                            placeholder="0" 
+                            value={formData.lastRoundValuation || ""} 
+                            onChange={(e) => setFormData({...formData, lastRoundValuation: Number(e.target.value)})} 
+                            data-testid="input-last-valuation"
+                        />
+                        <p className="text-xs text-muted-foreground">Post-money valuation</p>
                     </div>
                 </div>
                 
-                <div className="space-y-2">
-                    <div className="flex justify-between">
-                        <Label>Monthly Growth Rate</Label>
-                        <span className="font-mono font-bold text-primary">+{formData.growthRate}%</span>
-                    </div>
-                    <Slider 
-                        min={0} 
-                        max={100} 
-                        step={1} 
-                        value={[formData.growthRate]} 
+                <div className="space-y-4">
+                    <Label>Revenue Growth Rate: <span className="font-bold text-primary">{formData.growthRate}%</span> YoY</Label>
+                    <Slider
+                        value={[formData.growthRate]}
                         onValueChange={(v) => setFormData({...formData, growthRate: v[0]})}
+                        max={500}
+                        min={-50}
+                        step={5}
+                        className="py-4"
+                        data-testid="slider-growth-rate"
                     />
                 </div>
 
-                <div className="space-y-2">
-                    <Label>Cash on Hand</Label>
-                    <div className="relative">
-                        <span className="absolute left-3 top-2.5 text-muted-foreground">$</span>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                        <Label>Monthly Burn Rate ($)</Label>
                         <Input 
                             type="number" 
-                            className="pl-7" 
-                            value={formData.cashBalance || ""}
-                            onChange={(e) => setFormData({...formData, cashBalance: Number(e.target.value)})}
+                            placeholder="50000" 
+                            value={formData.burnRate || ""} 
+                            onChange={(e) => setFormData({...formData, burnRate: Number(e.target.value)})} 
+                            data-testid="input-burn-rate"
+                        />
+                    </div>
+                    <div className="space-y-2">
+                        <Label>Cash on Hand ($)</Label>
+                        <Input 
+                            type="number" 
+                            placeholder="500000" 
+                            value={formData.cashBalance || ""} 
+                            onChange={(e) => setFormData({...formData, cashBalance: Number(e.target.value)})} 
+                            data-testid="input-cash-balance"
                         />
                     </div>
                 </div>
             </div>
         )
     },
-    // Step 6: Qualitative
+    // Step 7: Qualitative
     {
         id: "qualitative",
-        title: "Strategic Scorecard",
-        description: "Rate your startup's core strengths relative to the market.",
-        icon: <Users className="size-6 text-orange-500" />,
+        title: "Qualitative Scores",
+        description: "Self-assess your startup across key dimensions.",
+        icon: <Rocket className="size-6 text-pink-500" />,
         content: (
-            <div className="space-y-8 py-2">
-                <div className="space-y-4">
-                    <div className="flex justify-between items-end">
-                        <Label className="text-base">Team Strength</Label>
-                        <span className={`text-sm font-bold ${formData.teamScore > 70 ? 'text-emerald-500' : 'text-muted-foreground'}`}>
-                            {formData.teamScore > 80 ? "World Class" : formData.teamScore > 60 ? "Strong" : "Developing"}
-                        </span>
+            <div className="space-y-8">
+                <p className="text-sm text-muted-foreground">Rate your startup honestly. These scores influence the Scorecard valuation method.</p>
+                
+                {[
+                    { key: "teamScore", label: "Team Strength", desc: "Experience, track record, domain expertise" },
+                    { key: "productScore", label: "Product Maturity", desc: "Stage of development, traction, PMF signals" },
+                    { key: "marketScore", label: "Market Opportunity", desc: "TAM size, growth rate, competitive landscape" }
+                ].map(({ key, label, desc }) => (
+                    <div key={key} className="space-y-3">
+                        <div className="flex justify-between items-center">
+                            <div>
+                                <Label className="text-base">{label}</Label>
+                                <p className="text-xs text-muted-foreground">{desc}</p>
+                            </div>
+                            <Badge variant="outline" className="text-lg px-3">{formData[key as keyof typeof formData] as number}</Badge>
+                        </div>
+                        <Slider
+                            value={[formData[key as keyof typeof formData] as number]}
+                            onValueChange={(v) => setFormData({...formData, [key]: v[0]})}
+                            max={100}
+                            min={0}
+                            step={5}
+                            data-testid={`slider-${key}`}
+                        />
+                        <div className="flex justify-between text-xs text-muted-foreground">
+                            <span>Below Average</span>
+                            <span>Average</span>
+                            <span>Exceptional</span>
+                        </div>
                     </div>
-                    <Slider 
-                        min={0} max={100} step={5}
-                        value={[formData.teamScore]}
-                        onValueChange={(v) => setFormData({...formData, teamScore: v[0]})}
-                    />
-                    <p className="text-xs text-muted-foreground">Experience, technical capability, and completeness.</p>
-                </div>
-
-                <div className="space-y-4">
-                    <div className="flex justify-between items-end">
-                        <Label className="text-base">Market Size & Timing</Label>
-                        <span className={`text-sm font-bold ${formData.marketScore > 70 ? 'text-emerald-500' : 'text-muted-foreground'}`}>
-                            {formData.marketScore > 80 ? "Massive" : formData.marketScore > 60 ? "Large" : "Niche"}
-                        </span>
-                    </div>
-                    <Slider 
-                        min={0} max={100} step={5}
-                        value={[formData.marketScore]}
-                        onValueChange={(v) => setFormData({...formData, marketScore: v[0]})}
-                    />
-                    <p className="text-xs text-muted-foreground">TAM, growth rate of market, and timing.</p>
-                </div>
-
-                <div className="space-y-4">
-                    <div className="flex justify-between items-end">
-                        <Label className="text-base">Product Moat</Label>
-                        <span className={`text-sm font-bold ${formData.productScore > 70 ? 'text-emerald-500' : 'text-muted-foreground'}`}>
-                            {formData.productScore > 80 ? "Defensible" : formData.productScore > 60 ? "Solid" : "Early"}
-                        </span>
-                    </div>
-                    <Slider 
-                        min={0} max={100} step={5}
-                        value={[formData.productScore]}
-                        onValueChange={(v) => setFormData({...formData, productScore: v[0]})}
-                    />
-                    <p className="text-xs text-muted-foreground">IP, technology advantage, and stickiness.</p>
-                </div>
+                ))}
             </div>
         )
     }
   ];
 
   const currentStep = steps[step];
+  const isFirstStep = step === 0;
+  const isLastStep = step === steps.length - 1;
+  const progressPercentage = (step / (steps.length - 1)) * 100;
 
   return (
-    <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4 relative overflow-hidden">
-        {/* Background Gradients */}
-        <div className="absolute top-[-20%] left-[-20%] w-[60%] h-[60%] bg-primary/10 rounded-full blur-[120px] pointer-events-none" />
-        <div className="absolute bottom-[-20%] right-[-20%] w-[60%] h-[60%] bg-blue-500/10 rounded-full blur-[120px] pointer-events-none" />
-
-        <Card className="w-full max-w-2xl shadow-2xl border-primary/10 bg-card/90 backdrop-blur-md relative z-10 overflow-hidden">
-            {step > 0 && (
-                <div className="bg-secondary/50 border-b p-4 flex items-center justify-between">
-                     <div className="flex items-center gap-4">
-                         <div className="p-2 bg-background border rounded-lg shadow-sm">
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 flex items-center justify-center p-4">
+        <Card className="w-full max-w-2xl shadow-2xl border-primary/10">
+            {!isFirstStep && (
+                <CardHeader className="pb-4">
+                    <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-3">
                             {currentStep.icon}
-                         </div>
-                         <div>
-                             <CardTitle className="text-lg">{currentStep.title}</CardTitle>
-                             <CardDescription className="text-xs">{currentStep.description}</CardDescription>
-                         </div>
-                     </div>
-                     <div className="text-xs font-mono text-muted-foreground">
-                        Step {step} of {steps.length - 1}
-                     </div>
-                </div>
+                            <div>
+                                <CardTitle className="text-xl">{currentStep.title}</CardTitle>
+                                <CardDescription>{currentStep.description}</CardDescription>
+                            </div>
+                        </div>
+                        <Badge variant="outline">Step {step} of {steps.length - 1}</Badge>
+                    </div>
+                    <div className="h-1 w-full bg-secondary rounded-full overflow-hidden">
+                        <motion.div 
+                            className="h-full bg-primary" 
+                            initial={{ width: 0 }}
+                            animate={{ width: `${progressPercentage}%` }}
+                            transition={{ duration: 0.3 }}
+                        />
+                    </div>
+                </CardHeader>
             )}
             
-            {step > 0 && (
-                <div className="w-full bg-secondary h-1">
-                    <motion.div 
-                        className="bg-primary h-full"
-                        initial={{ width: `${((step - 1) / (steps.length - 1)) * 100}%` }}
-                        animate={{ width: `${(step / (steps.length - 1)) * 100}%` }}
-                        transition={{ duration: 0.5, ease: "easeInOut" }}
-                    />
-                </div>
-            )}
-            
-            <CardContent className={step === 0 ? "pt-6 pb-6" : "pt-6 h-[460px] overflow-y-auto"}>
+            <CardContent className={isFirstStep ? 'pt-8' : ''}>
                 <AnimatePresence mode="wait">
                     <motion.div
                         key={step}
@@ -682,36 +865,29 @@ export default function Onboarding() {
                         animate={{ opacity: 1, x: 0 }}
                         exit={{ opacity: 0, x: -20 }}
                         transition={{ duration: 0.2 }}
-                        className="h-full"
                     >
                         {currentStep.content}
                     </motion.div>
                 </AnimatePresence>
             </CardContent>
 
-            {step > 0 && (
-                <CardFooter className="flex justify-between gap-4 border-t pt-4 bg-secondary/20">
-                    <Button variant="ghost" onClick={handleBack} className="gap-2">
+            {!isFirstStep && (
+                <CardFooter className="flex justify-between pt-6 border-t">
+                    <Button variant="ghost" onClick={handleBack} className="gap-2" data-testid="button-back">
                         <ArrowLeft className="size-4" /> Back
                     </Button>
-                    <Button className="min-w-[140px] gap-2 shadow-lg shadow-primary/10" onClick={step === steps.length - 1 ? handleComplete : handleNext}>
-                        {step === steps.length - 1 ? (
-                            <>Generate Valuation <Rocket className="size-4" /></>
-                        ) : (
-                            <>Next Step <ArrowRight className="size-4" /></>
-                        )}
-                    </Button>
+                    {isLastStep ? (
+                        <Button onClick={handleComplete} className="gap-2 shadow-lg shadow-primary/20" data-testid="button-complete">
+                            Complete Setup <Sparkles className="size-4" />
+                        </Button>
+                    ) : (
+                        <Button onClick={handleNext} className="gap-2" data-testid="button-next">
+                            Continue <ArrowRight className="size-4" />
+                        </Button>
+                    )}
                 </CardFooter>
             )}
         </Card>
-        
-        {step > 0 && (
-            <div className="mt-8 text-center animate-in fade-in delay-500">
-                 <Button variant="link" className="text-muted-foreground text-xs" onClick={handleDemoMode}>
-                    Skip to Demo Data
-                 </Button>
-            </div>
-        )}
     </div>
   );
 }

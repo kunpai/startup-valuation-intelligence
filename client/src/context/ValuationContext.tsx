@@ -8,6 +8,14 @@ interface CompanyProfile {
   stage: string;
   region: string;
   foundedYear: number;
+  // Harmonic-aligned fields for better comp matching
+  industryTags?: string[];
+  technologyTags?: string[];
+  customerType?: string;
+  revenueModel?: string;
+  targetCustomerSize?: string;
+  country?: string;
+  description?: string;
 }
 
 interface Financials {
@@ -187,13 +195,20 @@ export function ValuationProvider({ children }: { children: ReactNode }) {
       setQualitative(data.qualitative);
       setSelectedMethodology(data.methodology);
       
-      // Create company in database with provided data
+      // Create company in database with provided data including Harmonic-aligned fields
       const company = await companiesApi.create({
         name: data.profile.name,
         sector: data.profile.sector,
         stage: data.profile.stage,
         region: data.profile.region,
-        foundedYear: data.profile.foundedYear
+        foundedYear: data.profile.foundedYear,
+        industryTags: data.profile.industryTags,
+        technologyTags: data.profile.technologyTags,
+        customerType: data.profile.customerType,
+        revenueModel: data.profile.revenueModel,
+        targetCustomerSize: data.profile.targetCustomerSize,
+        country: data.profile.country,
+        description: data.profile.description
       });
       
       setCurrentCompanyId(company.id);
