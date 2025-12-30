@@ -26,13 +26,28 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { MOCK_METHODOLOGY_BREAKDOWN, MOCK_VALUATION_HISTORY, MOCK_MILESTONES } from "@/lib/constants";
 import { SimulationSheet } from "@/components/dashboard/SimulationSheet";
 import { VirtualCFO } from "@/components/dashboard/VirtualCFO";
+import { PresenceIndicator } from "@/components/collaboration/PresenceIndicator";
 import { Link, useLocation } from "wouter";
 import { useValuation } from "@/context/ValuationContext";
-import { useEffect } from "react";
+import { useCollaboration } from "@/hooks/useCollaboration";
+import { useCallback, useEffect } from "react";
 
 export default function Dashboard() {
-  const { isDemoMode, companyProfile, financials, qualitative, calculatedValuation } = useValuation();
+  const { isDemoMode, companyProfile, financials, qualitative, calculatedValuation, currentCompanyId, updateFinancials, updateQualitative } = useValuation();
   const [, setLocation] = useLocation();
+  
+  const handleValuationUpdate = useCallback((update: { field: string; value: any }) => {
+    if (update.field === "financials") {
+      updateFinancials(update.value);
+    } else if (update.field === "qualitative") {
+      updateQualitative(update.value);
+    }
+  }, [updateFinancials, updateQualitative]);
+
+  const { collaborators, isConnected } = useCollaboration({
+    roomId: currentCompanyId ? `valuation-${currentCompanyId}` : null,
+    onValuationUpdate: handleValuationUpdate
+  });
 
   // Calculate dynamic blended valuation based on input
   const displayValuation = calculatedValuation 
@@ -84,7 +99,10 @@ export default function Dashboard() {
                   </h3>
                   <p className="text-xs md:text-sm text-muted-foreground">We've initialized your valuation model based on your inputs.</p>
               </div>
-              <Button variant="outline" size="sm" onClick={() => setLocation("/onboarding")} className="w-full sm:w-auto">Edit Profile</Button>
+              <div className="flex items-center gap-3">
+                  <PresenceIndicator collaborators={collaborators} isConnected={isConnected} />
+                  <Button variant="outline" size="sm" onClick={() => setLocation("/onboarding")} className="w-full sm:w-auto">Edit Profile</Button>
+              </div>
           </div>
       )}
 

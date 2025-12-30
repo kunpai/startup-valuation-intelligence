@@ -1,5 +1,7 @@
 import { useValuation } from "@/context/ValuationContext";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
+import { useCollaboration } from "@/hooks/useCollaboration";
+import { PresenceIndicator } from "@/components/collaboration/PresenceIndicator";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -119,7 +121,20 @@ export default function ValuationEngine() {
   const [activeTab, setActiveTab] = useState("overview");
   const [location, setLocation] = useLocation();
 
-  const { companyProfile, setCalculatedValuation, saveValuation, isDemoMode } = useValuation(); // Get company profile for adaptive weighting
+  const { companyProfile, setCalculatedValuation, saveValuation, isDemoMode, currentCompanyId, updateFinancials, updateQualitative } = useValuation();
+
+  const handleValuationUpdate = useCallback((update: { field: string; value: any }) => {
+    if (update.field === "financials") {
+      updateFinancials(update.value);
+    } else if (update.field === "qualitative") {
+      updateQualitative(update.value);
+    }
+  }, [updateFinancials, updateQualitative]);
+
+  const { collaborators, isConnected, broadcastUpdate, setEditing } = useCollaboration({
+    roomId: currentCompanyId ? `valuation-${currentCompanyId}` : null,
+    onValuationUpdate: handleValuationUpdate
+  });
 
   // --- NEW: Smart Weighting State ---
   const [smartWeighting, setSmartWeighting] = useState(true);
@@ -319,9 +334,12 @@ export default function ValuationEngine() {
               <h1 className="text-2xl md:text-3xl font-bold font-heading">Valuation Engine</h1>
               <p className="text-sm md:text-base text-muted-foreground mt-1 md:mt-2">Deep-dive valuation workspace with methodology-specific frameworks.</p>
           </div>
-          <Button onClick={handleSaveReport} className="gap-2 shadow-lg shadow-primary/20 hover:shadow-primary/40 transition-shadow w-full sm:w-auto" data-testid="button-save-valuation">
-            <Plus className="size-4" /> Save as Report
-          </Button>
+          <div className="flex items-center gap-3 w-full sm:w-auto">
+              <PresenceIndicator collaborators={collaborators} isConnected={isConnected} />
+              <Button onClick={handleSaveReport} className="gap-2 shadow-lg shadow-primary/20 hover:shadow-primary/40 transition-shadow flex-1 sm:flex-none" data-testid="button-save-valuation">
+                <Plus className="size-4" /> Save as Report
+              </Button>
+          </div>
       </div>
 
       <Tabs defaultValue="overview" value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col space-y-4 md:space-y-6">
