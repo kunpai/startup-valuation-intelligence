@@ -59,7 +59,14 @@ function mapStage(harmonicStage: string | null): string {
   return stageMap[harmonicStage] || harmonicStage;
 }
 
-function extractIndustry(tags: Array<{ display_value: string; type: string }>): string | null {
+function extractIndustries(tags: Array<{ display_value: string; type: string }>): string[] {
+  // Get all industry and technology tags for better matching
+  return tags
+    .filter(t => t.type === "INDUSTRY" || t.type === "MARKET_VERTICAL" || t.type === "TECHNOLOGY")
+    .map(t => t.display_value);
+}
+
+function extractPrimaryIndustry(tags: Array<{ display_value: string; type: string }>): string | null {
   const industryTag = tags.find(t => t.type === "INDUSTRY" || t.type === "MARKET_VERTICAL");
   return industryTag?.display_value || null;
 }
@@ -78,12 +85,16 @@ function mapRegion(location: { country: string | null } | null): string {
   return "Other";
 }
 
-function transformCompany(company: HarmonicCompany): CompanySearchResult {
+interface TransformedCompanyInternal extends CompanySearchResult {
+  allIndustries: string[];
+}
+
+function transformCompany(company: HarmonicCompany): TransformedCompanyInternal {
   return {
     id: company.entity_urn,
     name: company.name,
     description: company.description,
-    sector: extractIndustry(company.tags || []),
+    sector: extractPrimaryIndustry(company.tags || []),
     stage: mapStage(company.funding?.funding_stage || company.stage),
     region: mapRegion(company.location),
     valuation: null,
@@ -92,6 +103,7 @@ function transformCompany(company: HarmonicCompany): CompanySearchResult {
     headcount: company.headcount,
     website: company.website?.domain || null,
     logoUrl: company.logo_url,
+    allIndustries: extractIndustries(company.tags || []),
   };
 }
 
@@ -107,8 +119,14 @@ export async function searchCompanies(options: {
   }
 
   const { limit = 20 } = options;
+  
+  // Request many more than needed since we'll filter client-side
+  // Harmonic API returns companies globally, filtering is aggressive
+  const fetchSize = 200;
 
   try {
+    console.log("[harmonic] Searching with options:", options);
+    
     const searchResponse = await fetch(`${HARMONIC_BASE_URL}/search/companies`, {
       method: "POST",
       headers: {
@@ -122,18 +140,20 @@ export async function searchCompanies(options: {
             join_operator: "and"
           },
           pagination: {
-            page_size: limit
+            page_size: fetchSize
           }
         }
       }),
     });
 
     if (!searchResponse.ok) {
-      console.error("Harmonic search failed:", await searchResponse.text());
+      const errorText = await searchResponse.text();
+      console.error("[harmonic] Search failed:", errorText);
       return [];
     }
 
-    const searchData = await searchResponse.json() as { results: string[] };
+    const searchData = await searchResponse.json() as { results: string[], count: number };
+    console.log(`[harmonic] Search returned ${searchData.results?.length || 0} URNs from ${searchData.count} total`);
     
     if (!searchData.results || searchData.results.length === 0) {
       return [];
@@ -151,34 +171,55 @@ export async function searchCompanies(options: {
     });
 
     if (!batchResponse.ok) {
-      console.error("Harmonic batch get failed:", await batchResponse.text());
+      const errorText = await batchResponse.text();
+      console.error("[harmonic] Batch get failed:", errorText);
       return [];
     }
 
     const companies = await batchResponse.json() as HarmonicCompany[];
+    console.log(`[harmonic] Got ${companies.length} company details`);
     
     let results = companies.map(transformCompany);
+    console.log(`[harmonic] Sample company:`, {
+      name: results[0]?.name,
+      sector: results[0]?.sector,
+      stage: results[0]?.stage,
+      region: results[0]?.region,
+      allIndustries: results[0]?.allIndustries,
+    });
 
+    // Client-side filtering based on returned data
     if (options.sector) {
       const sectorKeywords = getSectorKeywords(options.sector);
-      results = results.filter(c => 
-        c.sector && sectorKeywords.some(keyword => 
-          c.sector!.toLowerCase().includes(keyword.toLowerCase())
-        )
-      );
+      const beforeCount = results.length;
+      results = results.filter(c => {
+        // Check against all industries, not just primary
+        const allTags = c.allIndustries.join(' ').toLowerCase();
+        return sectorKeywords.some(keyword => 
+          allTags.includes(keyword.toLowerCase())
+        );
+      });
+      console.log(`[harmonic] Sector filter: ${beforeCount} -> ${results.length} (keywords: ${sectorKeywords.join(', ')})`);
     }
 
     if (options.stage) {
+      const beforeCount = results.length;
       results = results.filter(c => c.stage === options.stage);
+      console.log(`[harmonic] Stage filter: ${beforeCount} -> ${results.length}`);
     }
 
     if (options.region) {
+      const beforeCount = results.length;
       results = results.filter(c => c.region === options.region);
+      console.log(`[harmonic] Region filter: ${beforeCount} -> ${results.length}`);
     }
 
-    return results.slice(0, limit);
+    console.log(`[harmonic] Final results: ${results.length}`);
+    
+    // Return without internal allIndustries field
+    return results.slice(0, limit).map(({ allIndustries, ...rest }) => rest);
   } catch (error) {
-    console.error("Harmonic API error:", error);
+    console.error("[harmonic] API error:", error);
     return [];
   }
 }
