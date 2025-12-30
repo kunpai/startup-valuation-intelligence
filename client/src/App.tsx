@@ -14,6 +14,8 @@ import DealRoom from "@/pages/DealRoom";
 import Onboarding from "@/pages/Onboarding";
 import PlatformOverview from "@/pages/PlatformOverview";
 import Landing from "@/pages/Landing";
+import TeamManagement from "@/pages/TeamManagement";
+import AcceptInvite from "@/pages/AcceptInvite";
 import { ValuationProvider, useValuation } from "@/context/ValuationContext";
 import { ThemeProvider } from "@/components/theme-provider";
 import { useAuth } from "@/hooks/use-auth";
@@ -25,6 +27,7 @@ function AuthenticatedRouter() {
   return (
     <Switch>
       <Route path="/onboarding" component={Onboarding} />
+      <Route path="/invite/:token" component={AcceptInvite} />
       
       <Route>
          <AppLayout>
@@ -37,6 +40,7 @@ function AuthenticatedRouter() {
                 <Route path="/reports" component={Reports} />
                 <Route path="/reports/deal-room" component={DealRoom} />
                 <Route path="/reports/:id" component={ReportDetail} />
+                <Route path="/team" component={TeamManagement} />
                 <Route component={NotFound} />
             </Switch>
          </AppLayout>

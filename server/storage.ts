@@ -56,6 +56,7 @@ export interface IStorage {
   addCompanyMember(member: InsertCompanyMember): Promise<CompanyMember>;
   removeCompanyMember(companyId: string, userId: string): Promise<boolean>;
   isCompanyMember(companyId: string, userId: string): Promise<boolean>;
+  isCompanyOwner(companyId: string, userId: string): Promise<boolean>;
   hasCompanyAccess(companyId: string, userId: string): Promise<boolean>;
   
   // Invites
@@ -68,21 +69,62 @@ export interface IStorage {
 }
 
 export class DatabaseStorage implements IStorage {
-  // Companies (scoped by userId)
+  // Companies (scoped by userId - returns if owner OR member)
   async getCompany(id: string, userId: string): Promise<Company | undefined> {
-    const [company] = await db
+    // First check if user owns the company
+    const [ownedCompany] = await db
       .select()
       .from(companies)
       .where(and(eq(companies.id, id), eq(companies.userId, userId)));
-    return company || undefined;
+    
+    if (ownedCompany) return ownedCompany;
+    
+    // Check if user is a member of the company
+    const isMember = await this.isCompanyMember(id, userId);
+    if (isMember) {
+      const [memberCompany] = await db
+        .select()
+        .from(companies)
+        .where(eq(companies.id, id));
+      return memberCompany || undefined;
+    }
+    
+    return undefined;
   }
   
   async getCompaniesByUser(userId: string): Promise<Company[]> {
-    return await db
+    // Get companies user owns
+    const ownedCompanies = await db
       .select()
       .from(companies)
       .where(eq(companies.userId, userId))
       .orderBy(desc(companies.createdAt));
+    
+    // Get companies user is a member of
+    const memberCompanyIds = await db
+      .select({ companyId: companyMembers.companyId })
+      .from(companyMembers)
+      .where(eq(companyMembers.userId, userId));
+    
+    if (memberCompanyIds.length > 0) {
+      const memberCompanies = await db
+        .select()
+        .from(companies)
+        .where(
+          or(...memberCompanyIds.map(m => eq(companies.id, m.companyId)))
+        );
+      
+      // Combine and dedupe
+      const allCompanies = [...ownedCompanies, ...memberCompanies];
+      const uniqueCompanies = allCompanies.filter((company, index, self) =>
+        index === self.findIndex(c => c.id === company.id)
+      );
+      return uniqueCompanies.sort((a, b) => 
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
+    }
+    
+    return ownedCompanies;
   }
   
   async createCompany(insertCompany: InsertCompany): Promise<Company> {
@@ -246,6 +288,14 @@ export class DatabaseStorage implements IStorage {
       .from(companyMembers)
       .where(and(eq(companyMembers.companyId, companyId), eq(companyMembers.userId, userId)));
     return !!member;
+  }
+  
+  async isCompanyOwner(companyId: string, userId: string): Promise<boolean> {
+    const [company] = await db
+      .select()
+      .from(companies)
+      .where(and(eq(companies.id, companyId), eq(companies.userId, userId)));
+    return !!company;
   }
   
   async hasCompanyAccess(companyId: string, userId: string): Promise<boolean> {

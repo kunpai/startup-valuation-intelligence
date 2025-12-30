@@ -22,6 +22,7 @@ import {
   History,
   HelpCircle,
   BookOpen,
+  Users,
 } from "lucide-react";
 import { useLocation, Link } from "wouter";
 
@@ -68,6 +69,12 @@ export function AppSidebar({ onStartTour }: AppSidebarProps) {
       url: "/reports",
       icon: FileText,
       tourId: "reports-nav",
+    },
+    {
+      title: "Team",
+      url: "/team",
+      icon: Users,
+      tourId: "team-nav",
     },
   ];
 

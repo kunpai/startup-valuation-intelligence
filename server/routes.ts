@@ -107,10 +107,10 @@ export async function registerRoutes(
   // Get snapshots for a company
   app.get("/api/companies/:companyId/snapshots", isAuthenticated, async (req, res) => {
     try {
-      // First verify user owns this company
+      // Verify user has access (owner or team member)
       const userId = getUserId(req);
-      const company = await storage.getCompany(req.params.companyId, userId);
-      if (!company) {
+      const hasAccess = await storage.hasCompanyAccess(req.params.companyId, userId);
+      if (!hasAccess) {
         return res.status(404).json({ error: "Company not found" });
       }
       
@@ -130,10 +130,10 @@ export async function registerRoutes(
         return res.status(404).json({ error: "Snapshot not found" });
       }
       
-      // Verify user owns the company this snapshot belongs to
+      // Verify user has access to the company
       const userId = getUserId(req);
-      const company = await storage.getCompany(snapshot.companyId, userId);
-      if (!company) {
+      const hasAccess = await storage.hasCompanyAccess(snapshot.companyId, userId);
+      if (!hasAccess) {
         return res.status(404).json({ error: "Snapshot not found" });
       }
       
@@ -147,10 +147,10 @@ export async function registerRoutes(
   // Create snapshot
   app.post("/api/snapshots", isAuthenticated, async (req, res) => {
     try {
-      // Verify user owns the company
+      // Verify user has access to the company
       const userId = getUserId(req);
-      const company = await storage.getCompany(req.body.companyId, userId);
-      if (!company) {
+      const hasAccess = await storage.hasCompanyAccess(req.body.companyId, userId);
+      if (!hasAccess) {
         return res.status(404).json({ error: "Company not found" });
       }
       
@@ -171,10 +171,10 @@ export async function registerRoutes(
         return res.status(404).json({ error: "Snapshot not found" });
       }
       
-      // Verify user owns the company
+      // Verify user has access to the company
       const userId = getUserId(req);
-      const company = await storage.getCompany(snapshot.companyId, userId);
-      if (!company) {
+      const hasAccess = await storage.hasCompanyAccess(snapshot.companyId, userId);
+      if (!hasAccess) {
         return res.status(404).json({ error: "Snapshot not found" });
       }
       
@@ -195,8 +195,8 @@ export async function registerRoutes(
   app.get("/api/companies/:companyId/scenarios", isAuthenticated, async (req, res) => {
     try {
       const userId = getUserId(req);
-      const company = await storage.getCompany(req.params.companyId, userId);
-      if (!company) {
+      const hasAccess = await storage.hasCompanyAccess(req.params.companyId, userId);
+      if (!hasAccess) {
         return res.status(404).json({ error: "Company not found" });
       }
       
@@ -212,8 +212,8 @@ export async function registerRoutes(
   app.post("/api/companies/:companyId/scenarios", isAuthenticated, async (req, res) => {
     try {
       const userId = getUserId(req);
-      const company = await storage.getCompany(req.params.companyId, userId);
-      if (!company) {
+      const hasAccess = await storage.hasCompanyAccess(req.params.companyId, userId);
+      if (!hasAccess) {
         return res.status(404).json({ error: "Company not found" });
       }
       
@@ -233,8 +233,8 @@ export async function registerRoutes(
   app.patch("/api/companies/:companyId/scenarios/:id", isAuthenticated, async (req, res) => {
     try {
       const userId = getUserId(req);
-      const company = await storage.getCompany(req.params.companyId, userId);
-      if (!company) {
+      const hasAccess = await storage.hasCompanyAccess(req.params.companyId, userId);
+      if (!hasAccess) {
         return res.status(404).json({ error: "Company not found" });
       }
       
@@ -253,8 +253,8 @@ export async function registerRoutes(
   app.delete("/api/companies/:companyId/scenarios/:id", isAuthenticated, async (req, res) => {
     try {
       const userId = getUserId(req);
-      const company = await storage.getCompany(req.params.companyId, userId);
-      if (!company) {
+      const hasAccess = await storage.hasCompanyAccess(req.params.companyId, userId);
+      if (!hasAccess) {
         return res.status(404).json({ error: "Company not found" });
       }
       
@@ -275,8 +275,8 @@ export async function registerRoutes(
   app.get("/api/companies/:companyId/comparables", isAuthenticated, async (req, res) => {
     try {
       const userId = getUserId(req);
-      const company = await storage.getCompany(req.params.companyId, userId);
-      if (!company) {
+      const hasAccess = await storage.hasCompanyAccess(req.params.companyId, userId);
+      if (!hasAccess) {
         return res.status(404).json({ error: "Company not found" });
       }
       
@@ -292,8 +292,8 @@ export async function registerRoutes(
   app.post("/api/companies/:companyId/comparables", isAuthenticated, async (req, res) => {
     try {
       const userId = getUserId(req);
-      const company = await storage.getCompany(req.params.companyId, userId);
-      if (!company) {
+      const hasAccess = await storage.hasCompanyAccess(req.params.companyId, userId);
+      if (!hasAccess) {
         return res.status(404).json({ error: "Company not found" });
       }
       
@@ -313,8 +313,8 @@ export async function registerRoutes(
   app.delete("/api/companies/:companyId/comparables/:id", isAuthenticated, async (req, res) => {
     try {
       const userId = getUserId(req);
-      const company = await storage.getCompany(req.params.companyId, userId);
-      if (!company) {
+      const hasAccess = await storage.hasCompanyAccess(req.params.companyId, userId);
+      if (!hasAccess) {
         return res.status(404).json({ error: "Company not found" });
       }
       
@@ -349,9 +349,9 @@ export async function registerRoutes(
   app.get("/api/companies/:companyId/team", isAuthenticated, async (req, res) => {
     try {
       const userId = getUserId(req);
-      const company = await storage.getCompany(req.params.companyId, userId);
-      if (!company) {
-        return res.status(404).json({ error: "Company not found" });
+      const isOwner = await storage.isCompanyOwner(req.params.companyId, userId);
+      if (!isOwner) {
+        return res.status(403).json({ error: "Only the company owner can manage team" });
       }
       
       const members = await storage.getCompanyMembers(req.params.companyId);
@@ -360,7 +360,7 @@ export async function registerRoutes(
       res.json({ 
         members, 
         invites: invites.filter(i => i.status === "pending"),
-        owner: { userId: company.userId }
+        owner: { userId }
       });
     } catch (error) {
       console.error("Error fetching team:", error);
@@ -372,9 +372,9 @@ export async function registerRoutes(
   app.post("/api/companies/:companyId/invites", isAuthenticated, async (req, res) => {
     try {
       const userId = getUserId(req);
-      const company = await storage.getCompany(req.params.companyId, userId);
-      if (!company) {
-        return res.status(404).json({ error: "Company not found" });
+      const isOwner = await storage.isCompanyOwner(req.params.companyId, userId);
+      if (!isOwner) {
+        return res.status(403).json({ error: "Only the company owner can invite members" });
       }
       
       const { email } = req.body;
@@ -406,9 +406,9 @@ export async function registerRoutes(
   app.delete("/api/companies/:companyId/invites/:inviteId", isAuthenticated, async (req, res) => {
     try {
       const userId = getUserId(req);
-      const company = await storage.getCompany(req.params.companyId, userId);
-      if (!company) {
-        return res.status(404).json({ error: "Company not found" });
+      const isOwner = await storage.isCompanyOwner(req.params.companyId, userId);
+      if (!isOwner) {
+        return res.status(403).json({ error: "Only the company owner can cancel invites" });
       }
       
       const success = await storage.deleteInvite(req.params.inviteId);
@@ -491,9 +491,9 @@ export async function registerRoutes(
   app.delete("/api/companies/:companyId/team/:memberId", isAuthenticated, async (req, res) => {
     try {
       const userId = getUserId(req);
-      const company = await storage.getCompany(req.params.companyId, userId);
-      if (!company) {
-        return res.status(404).json({ error: "Company not found" });
+      const isOwner = await storage.isCompanyOwner(req.params.companyId, userId);
+      if (!isOwner) {
+        return res.status(403).json({ error: "Only the company owner can remove members" });
       }
       
       const success = await storage.removeCompanyMember(req.params.companyId, req.params.memberId);
