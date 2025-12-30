@@ -73,8 +73,9 @@ export function setupRealtime(httpServer: HTTPServer, sessionMiddleware?: Reques
       }
       
       try {
-        const company = await storage.getCompany(companyId, authenticatedUserId);
-        if (!company) {
+        // Check if user has access (owner or team member)
+        const hasAccess = await storage.hasCompanyAccess(companyId, authenticatedUserId);
+        if (!hasAccess) {
           log(`Unauthorized room access attempt: user ${authenticatedUserId} tried to join ${roomId}`, "realtime");
           socket.emit("error", { message: "Access denied to this valuation" });
           return;
