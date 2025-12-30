@@ -385,7 +385,8 @@ export async function searchCompaniesByName(query: string, limit: number = 10): 
   try {
     console.log(`[harmonic] Searching companies by name: "${query}"`);
     
-    // Use the search endpoint with a name filter
+    // Use the search endpoint with a company_name filter
+    // Harmonic API expects: { field, comparator, value } format for filters
     const searchResponse = await fetch(`${HARMONIC_BASE_URL}/search/companies`, {
       method: "POST",
       headers: {
@@ -397,7 +398,8 @@ export async function searchCompaniesByName(query: string, limit: number = 10): 
           filter_group: {
             filters: [
               {
-                filter_type: "COMPANY_TEXT_SEARCH",
+                field: "company_name",
+                comparator: "contains",
                 value: query.trim()
               }
             ],
