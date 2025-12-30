@@ -123,5 +123,42 @@ export const insertScenarioSchema = createInsertSchema(scenarios).omit({
 export type InsertScenario = z.infer<typeof insertScenarioSchema>;
 export type Scenario = typeof scenarios.$inferSelect;
 
+// Company Members - allows multiple users to access a company
+export const companyMembers = pgTable("company_members", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  companyId: varchar("company_id").notNull().references(() => companies.id, { onDelete: 'cascade' }),
+  userId: varchar("user_id").notNull(),
+  role: text("role").notNull().default("member"), // "owner" or "member"
+  joinedAt: timestamp("joined_at").defaultNow().notNull(),
+});
+
+export const insertCompanyMemberSchema = createInsertSchema(companyMembers).omit({
+  id: true,
+  joinedAt: true,
+});
+
+export type InsertCompanyMember = z.infer<typeof insertCompanyMemberSchema>;
+export type CompanyMember = typeof companyMembers.$inferSelect;
+
+// Company Invites - pending invitations to join a company
+export const companyInvites = pgTable("company_invites", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  companyId: varchar("company_id").notNull().references(() => companies.id, { onDelete: 'cascade' }),
+  invitedBy: varchar("invited_by").notNull(), // userId of the person who sent invite
+  inviteEmail: text("invite_email").notNull(),
+  inviteToken: varchar("invite_token").notNull(), // unique token for accepting invite
+  status: text("status").notNull().default("pending"), // "pending", "accepted", "declined", "expired"
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  expiresAt: timestamp("expires_at").notNull(),
+});
+
+export const insertCompanyInviteSchema = createInsertSchema(companyInvites).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertCompanyInvite = z.infer<typeof insertCompanyInviteSchema>;
+export type CompanyInvite = typeof companyInvites.$inferSelect;
+
 // Re-export chat models
 export * from "./models/chat";
