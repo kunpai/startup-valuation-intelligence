@@ -5,6 +5,13 @@ import { insertCompanySchema, insertValuationSnapshotSchema, insertScenarioSchem
 import { registerMiraRoutes } from "./mira";
 import { calculateValuation, type ValuationInput } from "./valuation";
 import { isAuthenticated } from "./replit_integrations/auth";
+import crypto from "crypto";
+
+// Get user email from authenticated request
+function getUserEmail(req: Express.Request): string {
+  const user = req.user as any;
+  return user?.claims?.email || "";
+}
 
 // Helper to get userId from authenticated request
 function getUserId(req: Express.Request): string {
@@ -333,6 +340,170 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Error calculating valuation:", error);
       res.status(500).json({ error: "Failed to calculate valuation" });
+    }
+  });
+
+  // ==================== Team Management ====================
+  
+  // Get team members for a company (owner only)
+  app.get("/api/companies/:companyId/team", isAuthenticated, async (req, res) => {
+    try {
+      const userId = getUserId(req);
+      const company = await storage.getCompany(req.params.companyId, userId);
+      if (!company) {
+        return res.status(404).json({ error: "Company not found" });
+      }
+      
+      const members = await storage.getCompanyMembers(req.params.companyId);
+      const invites = await storage.getCompanyInvites(req.params.companyId);
+      
+      res.json({ 
+        members, 
+        invites: invites.filter(i => i.status === "pending"),
+        owner: { userId: company.userId }
+      });
+    } catch (error) {
+      console.error("Error fetching team:", error);
+      res.status(500).json({ error: "Failed to fetch team" });
+    }
+  });
+  
+  // Send invite to join company (owner only)
+  app.post("/api/companies/:companyId/invites", isAuthenticated, async (req, res) => {
+    try {
+      const userId = getUserId(req);
+      const company = await storage.getCompany(req.params.companyId, userId);
+      if (!company) {
+        return res.status(404).json({ error: "Company not found" });
+      }
+      
+      const { email } = req.body;
+      if (!email) {
+        return res.status(400).json({ error: "Email is required" });
+      }
+      
+      // Generate unique invite token
+      const inviteToken = crypto.randomBytes(32).toString("hex");
+      const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
+      
+      const invite = await storage.createInvite({
+        companyId: req.params.companyId,
+        invitedBy: userId,
+        inviteEmail: email,
+        inviteToken,
+        status: "pending",
+        expiresAt
+      });
+      
+      res.status(201).json(invite);
+    } catch (error) {
+      console.error("Error creating invite:", error);
+      res.status(500).json({ error: "Failed to create invite" });
+    }
+  });
+  
+  // Cancel/delete invite (owner only)
+  app.delete("/api/companies/:companyId/invites/:inviteId", isAuthenticated, async (req, res) => {
+    try {
+      const userId = getUserId(req);
+      const company = await storage.getCompany(req.params.companyId, userId);
+      if (!company) {
+        return res.status(404).json({ error: "Company not found" });
+      }
+      
+      const success = await storage.deleteInvite(req.params.inviteId);
+      if (!success) {
+        return res.status(404).json({ error: "Invite not found" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting invite:", error);
+      res.status(500).json({ error: "Failed to delete invite" });
+    }
+  });
+  
+  // Get pending invites for current user (by email)
+  app.get("/api/invites/pending", isAuthenticated, async (req, res) => {
+    try {
+      const email = getUserEmail(req);
+      if (!email) {
+        return res.json([]);
+      }
+      
+      const invites = await storage.getPendingInvitesByEmail(email);
+      res.json(invites);
+    } catch (error) {
+      console.error("Error fetching pending invites:", error);
+      res.status(500).json({ error: "Failed to fetch invites" });
+    }
+  });
+  
+  // Accept invite by token
+  app.post("/api/invites/:token/accept", isAuthenticated, async (req, res) => {
+    try {
+      const userId = getUserId(req);
+      const email = getUserEmail(req);
+      
+      const invite = await storage.getInviteByToken(req.params.token);
+      if (!invite) {
+        return res.status(404).json({ error: "Invite not found" });
+      }
+      
+      if (invite.status !== "pending") {
+        return res.status(400).json({ error: "Invite is no longer valid" });
+      }
+      
+      if (new Date() > invite.expiresAt) {
+        await storage.updateInviteStatus(invite.id, "expired");
+        return res.status(400).json({ error: "Invite has expired" });
+      }
+      
+      // Verify email matches
+      if (invite.inviteEmail.toLowerCase() !== email.toLowerCase()) {
+        return res.status(403).json({ error: "This invite is for a different email address" });
+      }
+      
+      // Check if already a member
+      const alreadyMember = await storage.isCompanyMember(invite.companyId, userId);
+      if (alreadyMember) {
+        await storage.updateInviteStatus(invite.id, "accepted");
+        return res.json({ message: "Already a team member" });
+      }
+      
+      // Add as member
+      await storage.addCompanyMember({
+        companyId: invite.companyId,
+        userId,
+        role: "member"
+      });
+      
+      // Mark invite as accepted
+      await storage.updateInviteStatus(invite.id, "accepted");
+      
+      res.json({ message: "Successfully joined the team", companyId: invite.companyId });
+    } catch (error) {
+      console.error("Error accepting invite:", error);
+      res.status(500).json({ error: "Failed to accept invite" });
+    }
+  });
+  
+  // Remove team member (owner only)
+  app.delete("/api/companies/:companyId/team/:memberId", isAuthenticated, async (req, res) => {
+    try {
+      const userId = getUserId(req);
+      const company = await storage.getCompany(req.params.companyId, userId);
+      if (!company) {
+        return res.status(404).json({ error: "Company not found" });
+      }
+      
+      const success = await storage.removeCompanyMember(req.params.companyId, req.params.memberId);
+      if (!success) {
+        return res.status(404).json({ error: "Member not found" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error removing member:", error);
+      res.status(500).json({ error: "Failed to remove member" });
     }
   });
 
