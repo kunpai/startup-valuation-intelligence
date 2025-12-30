@@ -287,43 +287,6 @@ function getSectorKeywords(sector: string): string[] {
   return sectorMap[sector] || [sector];
 }
 
-export async function getCompanyByDomain(domain: string): Promise<CompanySearchResult | null> {
-  if (!HARMONIC_API_KEY) {
-    console.error("HARMONIC_API_KEY not configured");
-    return null;
-  }
-
-  try {
-    const response = await fetch(`${HARMONIC_BASE_URL}/companies`, {
-      method: "POST",
-      headers: {
-        "apikey": HARMONIC_API_KEY,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        apikey: HARMONIC_API_KEY,
-        website_domain: domain,
-      }),
-    });
-
-    if (!response.ok) {
-      console.error("Harmonic company lookup failed:", await response.text());
-      return null;
-    }
-
-    const data = await response.json() as { results?: HarmonicCompany[] };
-    
-    if (data.results && data.results.length > 0) {
-      return transformCompany(data.results[0]);
-    }
-
-    return null;
-  } catch (error) {
-    console.error("Harmonic API error:", error);
-    return null;
-  }
-}
-
 export interface CompanyNameSearchResult {
   id: string;
   name: string;
@@ -372,6 +335,62 @@ function transformToNameSearchResult(company: HarmonicCompany): CompanyNameSearc
   };
 }
 
+// Fast lookup by company domain - direct Harmonic API call
+export async function getCompanyByDomain(domain: string): Promise<CompanyNameSearchResult | null> {
+  if (!HARMONIC_API_KEY) {
+    console.error("HARMONIC_API_KEY not configured");
+    return null;
+  }
+
+  // Clean domain input
+  let cleanDomain = domain.trim().toLowerCase();
+  // Remove http(s):// if present
+  cleanDomain = cleanDomain.replace(/^https?:\/\//, "");
+  // Remove www. if present
+  cleanDomain = cleanDomain.replace(/^www\./, "");
+  // Remove trailing slash and path
+  cleanDomain = cleanDomain.split("/")[0];
+
+  if (!cleanDomain || cleanDomain.length < 3) {
+    return null;
+  }
+
+  try {
+    console.log(`[harmonic] Looking up company by domain: "${cleanDomain}"`);
+    
+    // Direct company lookup by domain - very fast!
+    const response = await fetch(`${HARMONIC_BASE_URL}/companies`, {
+      method: "POST",
+      headers: {
+        "apikey": HARMONIC_API_KEY,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        website_domain: cleanDomain,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.log(`[harmonic] Domain lookup returned ${response.status}: ${errorText}`);
+      return null;
+    }
+
+    const company = await response.json() as HarmonicCompany;
+    if (!company || !company.name) {
+      console.log(`[harmonic] No company found for domain: ${cleanDomain}`);
+      return null;
+    }
+
+    console.log(`[harmonic] Found company by domain: ${company.name}`);
+    return transformToNameSearchResult(company);
+  } catch (error) {
+    console.error("[harmonic] Domain lookup error:", error);
+    return null;
+  }
+}
+
+// Search companies by name - uses domain lookup first if input looks like a domain
 export async function searchCompaniesByName(query: string, limit: number = 10): Promise<CompanyNameSearchResult[]> {
   if (!HARMONIC_API_KEY) {
     console.error("HARMONIC_API_KEY not configured");
@@ -382,13 +401,21 @@ export async function searchCompaniesByName(query: string, limit: number = 10): 
     return [];
   }
 
-  const searchTerm = query.trim().toLowerCase();
+  const searchTerm = query.trim();
+
+  // Check if input looks like a domain (contains a dot)
+  if (searchTerm.includes(".")) {
+    const domainResult = await getCompanyByDomain(searchTerm);
+    if (domainResult) {
+      return [domainResult];
+    }
+  }
 
   try {
-    console.log(`[harmonic] Searching companies by name: "${query}"`);
+    console.log(`[harmonic] Searching companies by name: "${searchTerm}"`);
     
-    // Harmonic's filter API has specific requirements that are undocumented.
-    // Use the same approach as searchCompanies - fetch companies and filter client-side.
+    // Fetch companies and filter client-side (Harmonic's filter API is restrictive)
+    // Keep batch small for speed
     const searchResponse = await fetch(`${HARMONIC_BASE_URL}/search/companies`, {
       method: "POST",
       headers: {
@@ -402,7 +429,7 @@ export async function searchCompaniesByName(query: string, limit: number = 10): 
             join_operator: "and"
           },
           pagination: {
-            page_size: 200 // Fetch a good batch for client-side filtering
+            page_size: 100
           }
         }
       }),
@@ -415,13 +442,13 @@ export async function searchCompaniesByName(query: string, limit: number = 10): 
     }
 
     const searchData = await searchResponse.json() as { results: string[], count: number };
-    console.log(`[harmonic] Name search returned ${searchData.results?.length || 0} URNs from ${searchData.count} total`);
+    console.log(`[harmonic] Got ${searchData.results?.length || 0} URNs`);
     
     if (!searchData.results || searchData.results.length === 0) {
       return [];
     }
 
-    // Get company details for all results
+    // Get company details
     const batchResponse = await fetch(`${HARMONIC_BASE_URL}/companies/batchGet`, {
       method: "POST",
       headers: {
@@ -434,28 +461,23 @@ export async function searchCompaniesByName(query: string, limit: number = 10): 
     });
 
     if (!batchResponse.ok) {
-      const errorText = await batchResponse.text();
-      console.error("[harmonic] Batch get failed:", errorText);
       return [];
     }
 
     const companies = await batchResponse.json() as HarmonicCompany[];
-    console.log(`[harmonic] Got ${companies.length} company details for name search`);
+    const lowerSearch = searchTerm.toLowerCase();
     
-    // Filter by name match (case-insensitive) and prioritize exact/prefix matches
+    // Filter and sort by name relevance
     const results = companies
       .map(transformToNameSearchResult)
-      .filter(c => c.name && c.name.toLowerCase().includes(searchTerm))
+      .filter(c => c.name && c.name.toLowerCase().includes(lowerSearch))
       .sort((a, b) => {
         const aName = a.name.toLowerCase();
         const bName = b.name.toLowerCase();
-        // Exact match first
-        if (aName === searchTerm && bName !== searchTerm) return -1;
-        if (bName === searchTerm && aName !== searchTerm) return 1;
-        // Starts with match second
-        if (aName.startsWith(searchTerm) && !bName.startsWith(searchTerm)) return -1;
-        if (bName.startsWith(searchTerm) && !aName.startsWith(searchTerm)) return 1;
-        // Alphabetical
+        if (aName === lowerSearch) return -1;
+        if (bName === lowerSearch) return 1;
+        if (aName.startsWith(lowerSearch) && !bName.startsWith(lowerSearch)) return -1;
+        if (bName.startsWith(lowerSearch) && !aName.startsWith(lowerSearch)) return 1;
         return aName.localeCompare(bName);
       })
       .slice(0, limit);
@@ -463,7 +485,7 @@ export async function searchCompaniesByName(query: string, limit: number = 10): 
     console.log(`[harmonic] Returning ${results.length} name-matched companies`);
     return results;
   } catch (error) {
-    console.error("[harmonic] Name search API error:", error);
+    console.error("[harmonic] Name search error:", error);
     return [];
   }
 }

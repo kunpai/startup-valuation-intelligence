@@ -577,76 +577,71 @@ export default function Onboarding() {
                 )}
                 <div className="space-y-2 relative">
                     <Label className="flex items-center gap-2">
-                        Company Name <span className="text-destructive">*</span>
-                        {isSearching && <Loader2 className="size-3 animate-spin text-muted-foreground" />}
+                        Company Website <span className="text-muted-foreground text-xs">(instant lookup)</span>
+                        {isSearching && <Loader2 className="size-3 animate-spin text-primary" />}
                     </Label>
                     <div className="relative">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+                        <Globe className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
                         <Input 
                             ref={searchInputRef}
-                            placeholder="Search your company by name..." 
-                            value={formData.name}
+                            placeholder="yourcompany.com" 
                             onChange={(e) => handleNameInputChange(e.target.value)}
-                            onFocus={() => {
-                                if (formData.name.length >= 2 && !selectedFromSearch) setShowSearchResults(true);
-                            }}
                             autoFocus
-                            className={`pl-10 text-lg ${errors.name ? 'border-destructive focus-visible:ring-destructive' : ''}`}
-                            data-testid="input-company-name"
+                            className="pl-10"
+                            data-testid="input-company-domain"
                         />
                     </div>
                     
                     {showSearchResults && searchResults && searchResults.length > 0 && (
                         <div 
                             ref={dropdownRef}
-                            className="absolute z-50 w-full mt-1 bg-card border rounded-lg shadow-xl max-h-[300px] overflow-y-auto"
+                            className="absolute z-50 w-full mt-1 bg-card border rounded-lg shadow-xl"
                         >
-                            <div className="p-2 border-b bg-secondary/30">
-                                <p className="text-xs text-muted-foreground flex items-center gap-1">
-                                    <Sparkles className="size-3" /> Found in Harmonic database - click to auto-fill
+                            <div className="p-2 border-b bg-emerald-500/10">
+                                <p className="text-xs text-emerald-600 flex items-center gap-1">
+                                    <Sparkles className="size-3" /> Found in database - click to auto-fill
                                 </p>
                             </div>
                             {searchResults.map((company) => (
                                 <div
                                     key={company.id}
-                                    className="p-3 hover:bg-secondary/50 cursor-pointer border-b last:border-b-0 transition-colors"
+                                    className="p-3 hover:bg-secondary/50 cursor-pointer transition-colors"
                                     onClick={() => handleSelectCompany(company)}
                                     data-testid={`search-result-${company.id}`}
                                 >
-                                    <div className="flex items-start justify-between gap-2">
-                                        <div className="flex-1 min-w-0">
-                                            <p className="font-medium truncate">{company.name}</p>
-                                            {company.description && (
-                                                <p className="text-xs text-muted-foreground line-clamp-1">{company.description}</p>
-                                            )}
-                                        </div>
-                                        {company.stage && (
-                                            <Badge variant="outline" className="text-[10px] shrink-0">{company.stage}</Badge>
-                                        )}
-                                    </div>
-                                    <div className="flex flex-wrap gap-1 mt-1">
-                                        {company.industryTags.slice(0, 2).map(tag => (
-                                            <Badge key={tag} variant="secondary" className="text-[10px]">{tag}</Badge>
-                                        ))}
-                                        {company.country && (
-                                            <Badge variant="secondary" className="text-[10px]">{company.country}</Badge>
-                                        )}
-                                    </div>
+                                    <p className="font-medium">{company.name}</p>
+                                    {company.description && (
+                                        <p className="text-xs text-muted-foreground line-clamp-1">{company.description}</p>
+                                    )}
                                 </div>
                             ))}
                         </div>
                     )}
                     
                     {selectedFromSearch && (
-                        <p className="text-xs text-emerald-600 flex items-center gap-1">
+                        <p className="text-xs text-emerald-600 flex items-center gap-1 mt-1">
                             <Check className="size-3" /> Company data loaded from Harmonic
                         </p>
                     )}
-                    {!selectedFromSearch && formData.name.length >= 2 && !isSearching && searchResults?.length === 0 && (
-                        <p className="text-xs text-muted-foreground">
-                            No matching companies found. You can continue with a new company.
-                        </p>
-                    )}
+                    <p className="text-xs text-muted-foreground">
+                        Enter your domain (e.g. stripe.com) for instant data lookup
+                    </p>
+                </div>
+                
+                <div className="space-y-2">
+                    <Label className="flex items-center gap-2">
+                        Company Name <span className="text-destructive">*</span>
+                    </Label>
+                    <Input 
+                        placeholder="Your company name" 
+                        value={formData.name}
+                        onChange={(e) => {
+                            setSelectedFromSearch(false);
+                            setFormData(prev => ({ ...prev, name: e.target.value }));
+                        }}
+                        className={`text-lg ${errors.name ? 'border-destructive focus-visible:ring-destructive' : ''}`}
+                        data-testid="input-company-name"
+                    />
                     {errors.name && <p className="text-xs text-destructive">{errors.name}</p>}
                 </div>
                 
