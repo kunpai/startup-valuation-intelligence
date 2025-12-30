@@ -513,13 +513,25 @@ export async function registerRoutes(
   // Search for comparable companies
   app.get("/api/harmonic/search", isAuthenticated, async (req, res) => {
     try {
-      const { sector, stage, region, limit } = req.query;
+      const { sector, stage, region, limit, industryTags, technologyTags, customerType, country } = req.query;
+      
+      // Parse array parameters (can be comma-separated string or array)
+      const parsedIndustryTags = industryTags 
+        ? (Array.isArray(industryTags) ? industryTags as string[] : (industryTags as string).split(','))
+        : undefined;
+      const parsedTechnologyTags = technologyTags
+        ? (Array.isArray(technologyTags) ? technologyTags as string[] : (technologyTags as string).split(','))
+        : undefined;
       
       const results = await searchCompanies({
         sector: sector as string | undefined,
         stage: stage as string | undefined,
         region: region as string | undefined,
         limit: limit ? parseInt(limit as string) : 20,
+        industryTags: parsedIndustryTags,
+        technologyTags: parsedTechnologyTags,
+        customerType: customerType as string | undefined,
+        country: country as string | undefined,
       });
       
       res.json(results);

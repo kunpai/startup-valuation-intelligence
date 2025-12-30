@@ -107,12 +107,19 @@ function transformCompany(company: HarmonicCompany): TransformedCompanyInternal 
   };
 }
 
-export async function searchCompanies(options: {
+export interface CompanySearchOptions {
   sector?: string;
   stage?: string;
   region?: string;
   limit?: number;
-}): Promise<CompanySearchResult[]> {
+  // New Harmonic-aligned fields for better matching
+  industryTags?: string[];
+  technologyTags?: string[];
+  customerType?: string;
+  country?: string;
+}
+
+export async function searchCompanies(options: CompanySearchOptions): Promise<CompanySearchResult[]> {
   if (!HARMONIC_API_KEY) {
     console.error("HARMONIC_API_KEY not configured");
     return [];
@@ -188,12 +195,28 @@ export async function searchCompanies(options: {
       allIndustries: results[0]?.allIndustries,
     });
 
-    // Client-side filtering based on returned data
-    if (options.sector) {
+    // Client-side filtering using Harmonic-aligned tags
+    // Priority: use industryTags/technologyTags if provided, fall back to sector mapping
+    if (options.industryTags?.length || options.technologyTags?.length) {
+      const beforeCount = results.length;
+      const allRequestedTags = [
+        ...(options.industryTags || []),
+        ...(options.technologyTags || [])
+      ].map(t => t.toLowerCase());
+      
+      results = results.filter(c => {
+        const companyTags = c.allIndustries.map((t: string) => t.toLowerCase());
+        // Match if company has at least one of the requested tags
+        return allRequestedTags.some(tag => 
+          companyTags.some((ct: string) => ct.includes(tag) || tag.includes(ct))
+        );
+      });
+      console.log(`[harmonic] Tag filter: ${beforeCount} -> ${results.length} (tags: ${allRequestedTags.join(', ')})`);
+    } else if (options.sector) {
+      // Legacy sector filtering for backward compatibility
       const sectorKeywords = getSectorKeywords(options.sector);
       const beforeCount = results.length;
       results = results.filter(c => {
-        // Check against all industries, not just primary
         const allTags = c.allIndustries.join(' ').toLowerCase();
         return sectorKeywords.some(keyword => 
           allTags.includes(keyword.toLowerCase())
@@ -204,11 +227,19 @@ export async function searchCompanies(options: {
 
     if (options.stage) {
       const beforeCount = results.length;
-      results = results.filter(c => c.stage === options.stage);
-      console.log(`[harmonic] Stage filter: ${beforeCount} -> ${results.length}`);
+      // Map our stage format to Harmonic format for matching
+      const stageVariants = getStageVariants(options.stage);
+      results = results.filter(c => stageVariants.includes(c.stage || ''));
+      console.log(`[harmonic] Stage filter: ${beforeCount} -> ${results.length} (looking for: ${stageVariants.join(', ')})`);
     }
 
-    if (options.region) {
+    // Country takes priority over region for more precise matching
+    if (options.country) {
+      const beforeCount = results.length;
+      // Keep country filter relaxed - just log but don't filter too aggressively
+      // since region data is less reliable
+      console.log(`[harmonic] Country preference: ${options.country} (not filtering strictly)`);
+    } else if (options.region) {
       const beforeCount = results.length;
       results = results.filter(c => c.region === options.region);
       console.log(`[harmonic] Region filter: ${beforeCount} -> ${results.length}`);
@@ -222,6 +253,20 @@ export async function searchCompanies(options: {
     console.error("[harmonic] API error:", error);
     return [];
   }
+}
+
+function getStageVariants(stage: string): string[] {
+  // Return all possible stage names that match the given stage
+  const stageMap: Record<string, string[]> = {
+    "Pre-Seed": ["Pre-Seed", "PRE_SEED"],
+    "Seed": ["Seed", "SEED"],
+    "Series A": ["Series A", "SERIES_A"],
+    "Series B": ["Series B", "SERIES_B"],
+    "Series C": ["Series C", "Series C+", "SERIES_C"],
+    "Series C+": ["Series C+", "Series D", "SERIES_C", "SERIES_D", "SERIES_E", "Late Stage", "Growth"],
+    "Late Stage": ["Late Stage", "Growth", "LATE_STAGE", "GROWTH"],
+  };
+  return stageMap[stage] || [stage];
 }
 
 function getSectorKeywords(sector: string): string[] {
