@@ -46,6 +46,12 @@ interface OnboardingData {
   methodology: string;
 }
 
+interface SaveProfileData {
+  profile: Partial<CompanyProfile>;
+  financials: Financials;
+  qualitative: QualitativeScores;
+}
+
 interface ValuationContextType {
   isDemoMode: boolean;
   currentCompanyId: string | null;
@@ -63,6 +69,8 @@ interface ValuationContextType {
   setMethodology: (method: string) => void;
   setCalculatedValuation: (value: number) => void;
   completeOnboarding: (data: OnboardingData) => Promise<void>;
+  saveProfile: (data: Partial<CompanyProfile>) => Promise<void>;
+  saveFullProfile: (data: SaveProfileData) => Promise<void>;
   saveValuation: (snapshotName?: string, valuation?: number) => Promise<void>;
   resetData: () => void;
 }
@@ -276,6 +284,86 @@ export function ValuationProvider({ children }: { children: ReactNode }) {
     await saveValuationSnapshot(currentCompanyId, valueToSave, snapshotName);
   };
 
+  const saveProfile = async (data: Partial<CompanyProfile>) => {
+    if (!currentCompanyId) {
+      console.error("No company selected");
+      return;
+    }
+    
+    try {
+      // Update local state first
+      setCompanyProfile(prev => ({ ...prev, ...data }));
+      
+      // Persist to backend
+      await companiesApi.update(currentCompanyId, {
+        name: data.name,
+        sector: data.sector,
+        stage: data.stage,
+        region: data.region,
+        foundedYear: data.foundedYear,
+        industryTags: data.industryTags,
+        technologyTags: data.technologyTags,
+        customerType: data.customerType,
+        revenueModel: data.revenueModel,
+        targetCustomerSize: data.targetCustomerSize,
+        country: data.country,
+        description: data.description
+      });
+    } catch (error) {
+      console.error("Failed to save profile:", error);
+      throw error;
+    }
+  };
+
+  const saveFullProfile = async (data: SaveProfileData) => {
+    if (!currentCompanyId) {
+      console.error("No company selected");
+      return;
+    }
+    
+    try {
+      // Update all local state first
+      setCompanyProfile(prev => ({ ...prev, ...data.profile }));
+      setFinancials(data.financials);
+      setQualitative(data.qualitative);
+      
+      // Persist company profile to backend
+      await companiesApi.update(currentCompanyId, {
+        name: data.profile.name,
+        sector: data.profile.sector,
+        stage: data.profile.stage,
+        region: data.profile.region,
+        foundedYear: data.profile.foundedYear,
+        industryTags: data.profile.industryTags,
+        technologyTags: data.profile.technologyTags,
+        customerType: data.profile.customerType,
+        revenueModel: data.profile.revenueModel,
+        targetCustomerSize: data.profile.targetCustomerSize,
+        country: data.profile.country,
+        description: data.profile.description
+      });
+      
+      // Create snapshot with the fresh financial data (not from stale context)
+      await snapshotsApi.create({
+        companyId: currentCompanyId,
+        revenue: data.financials.revenue,
+        growthRate: data.financials.growthRate,
+        lastRoundValuation: data.financials.lastRoundValuation,
+        burnRate: data.financials.burnRate,
+        cashBalance: data.financials.cashBalance,
+        teamScore: data.qualitative.team,
+        productScore: data.qualitative.product,
+        marketScore: data.qualitative.market,
+        calculatedValuation: calculatedValuation,
+        selectedMethodology,
+        snapshotName: "Profile Update"
+      });
+    } catch (error) {
+      console.error("Failed to save full profile:", error);
+      throw error;
+    }
+  };
+
   const resetData = () => {
     setIsDemoMode(true);
     setCurrentCompanyId(null);
@@ -305,6 +393,8 @@ export function ValuationProvider({ children }: { children: ReactNode }) {
       setMethodology,
       setCalculatedValuation,
       completeOnboarding,
+      saveProfile,
+      saveFullProfile,
       saveValuation,
       resetData
     }}>

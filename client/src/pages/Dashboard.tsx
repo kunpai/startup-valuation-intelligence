@@ -27,6 +27,7 @@ import { MOCK_METHODOLOGY_BREAKDOWN, MOCK_VALUATION_HISTORY, MOCK_MILESTONES } f
 import { SimulationSheet } from "@/components/dashboard/SimulationSheet";
 import { VirtualCFO } from "@/components/dashboard/VirtualCFO";
 import { PresenceIndicator } from "@/components/collaboration/PresenceIndicator";
+import { EditProfileDialog } from "@/components/dashboard/EditProfileDialog";
 import { Link, useLocation } from "wouter";
 import { useValuation } from "@/context/ValuationContext";
 import { useCollaboration } from "@/hooks/useCollaboration";
@@ -101,7 +102,9 @@ export default function Dashboard() {
               </div>
               <div className="flex items-center gap-3">
                   <PresenceIndicator collaborators={collaborators} isConnected={isConnected} />
-                  <Button variant="outline" size="sm" onClick={() => setLocation("/onboarding")} className="w-full sm:w-auto">Edit Profile</Button>
+                  <EditProfileDialog trigger={
+                    <Button variant="outline" size="sm" className="w-full sm:w-auto" data-testid="button-edit-profile">Edit Profile</Button>
+                  } />
               </div>
           </div>
       )}
