@@ -23,7 +23,7 @@ import { Activity, ArrowUpRight, DollarSign, ShieldCheck, TrendingUp, Users } fr
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { MOCK_METHODOLOGY_BREAKDOWN, MOCK_VALUATION_HISTORY, MOCK_MILESTONES } from "@/lib/constants";
+import { MOCK_METHODOLOGY_BREAKDOWN, MOCK_VALUATION_HISTORY } from "@/lib/constants";
 import { SimulationSheet } from "@/components/dashboard/SimulationSheet";
 import { VirtualCFO } from "@/components/dashboard/VirtualCFO";
 import { PresenceIndicator } from "@/components/collaboration/PresenceIndicator";
@@ -31,10 +31,11 @@ import { EditProfileDialog } from "@/components/dashboard/EditProfileDialog";
 import { Link, useLocation } from "wouter";
 import { useValuation } from "@/context/ValuationContext";
 import { useCollaboration } from "@/hooks/useCollaboration";
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useMemo } from "react";
+import { format } from "date-fns";
 
 export default function Dashboard() {
-  const { isDemoMode, companyProfile, financials, qualitative, calculatedValuation, currentCompanyId, updateFinancials, updateQualitative } = useValuation();
+  const { isDemoMode, companyProfile, financials, qualitative, calculatedValuation, currentCompanyId, valuationSnapshots, updateFinancials, updateQualitative } = useValuation();
   const [, setLocation] = useLocation();
   
   const handleValuationUpdate = useCallback((update: { field: string; value: any }) => {
@@ -72,12 +73,40 @@ export default function Dashboard() {
     { name: "DCF", value: displayValuation * 0.2, fill: "hsl(var(--chart-5))" },
   ];
 
-  // User's valuation history - combine last round with current
-  const valuationHistory = [
-    { date: "Last Round", valuation: financials.lastRoundValuation, label: "Previous" },
-    { date: "Current", valuation: displayValuation, label: "Now" },
-    { date: "Target", valuation: displayValuation * 1.5, label: "Series A" },
-  ];
+  // User's valuation history from real snapshots
+  const snapshotHistory = useMemo(() => {
+    if (valuationSnapshots.length === 0) {
+      // Fallback to computed values if no snapshots
+      return [
+        { date: "Last Round", valuation: financials.lastRoundValuation },
+        { date: "Current", valuation: displayValuation },
+        { date: "Target", valuation: displayValuation * 1.5 },
+      ];
+    }
+    // Convert snapshots to chart data, ordered oldest to newest
+    return [...valuationSnapshots]
+      .reverse()
+      .slice(-6) // Last 6 snapshots
+      .map(s => ({
+        date: s.snapshotName || format(new Date(s.createdAt), 'MMM d'),
+        valuation: s.calculatedValuation || (s.revenue * 15 + s.lastRoundValuation * 0.5)
+      }));
+  }, [valuationSnapshots, financials, displayValuation]);
+
+  // Create milestones from real snapshot history
+  const recentMilestones = useMemo(() => {
+    if (valuationSnapshots.length === 0) {
+      return [
+        { title: "Complete onboarding to track milestones", date: "Get started", impact: "High", score: "+0" }
+      ];
+    }
+    return valuationSnapshots.slice(0, 3).map(s => ({
+      title: s.snapshotName || "Valuation Update",
+      date: format(new Date(s.createdAt), 'MMM d, yyyy'),
+      impact: s.calculatedValuation && s.calculatedValuation > 1000000 ? "High" : "Medium",
+      score: s.calculatedValuation ? `$${(s.calculatedValuation / 1000000).toFixed(1)}M` : "—"
+    }));
+  }, [valuationSnapshots]);
 
   // Dynamic qualitative data based on context
   const userRadarData = [
@@ -212,7 +241,7 @@ export default function Dashboard() {
           <CardContent className="pl-2">
             <div className="h-[300px] w-full">
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={isDemoMode ? MOCK_VALUATION_HISTORY : valuationHistory} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                <AreaChart data={isDemoMode ? MOCK_VALUATION_HISTORY : snapshotHistory} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
                   <defs>
                     <linearGradient id="colorValuation" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3}/>
@@ -339,8 +368,8 @@ export default function Dashboard() {
             </CardHeader>
             <CardContent>
                 <div className="space-y-4">
-                    {MOCK_MILESTONES.slice(0, 3).map((item, i) => (
-                        <div key={i} className="flex items-center justify-between p-3 rounded-lg bg-secondary/50 border border-border/50 hover:bg-secondary/70 transition-colors">
+                    {recentMilestones.map((item, i) => (
+                        <div key={i} className="flex items-center justify-between p-3 rounded-lg bg-secondary/50 border border-border/50 hover:bg-secondary/70 transition-colors" data-testid={`milestone-${i}`}>
                             <div className="flex flex-col">
                                 <span className="font-medium text-sm">{item.title}</span>
                                 <span className="text-xs text-muted-foreground">{item.date}</span>

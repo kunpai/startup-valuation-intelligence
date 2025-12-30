@@ -59,6 +59,7 @@ interface ValuationContextType {
   financials: Financials;
   qualitative: QualitativeScores;
   valuationHistory: ValuationHistoryItem[];
+  valuationSnapshots: ValuationSnapshot[];
   selectedMethodology: string;
   calculatedValuation: number | null;
   setDemoMode: (isDemo: boolean) => void;
@@ -72,6 +73,7 @@ interface ValuationContextType {
   saveProfile: (data: Partial<CompanyProfile>) => Promise<void>;
   saveFullProfile: (data: SaveProfileData) => Promise<void>;
   saveValuation: (snapshotName?: string, valuation?: number) => Promise<void>;
+  refreshSnapshots: () => Promise<void>;
   resetData: () => void;
 }
 
@@ -106,6 +108,7 @@ export function ValuationProvider({ children }: { children: ReactNode }) {
   const [financials, setFinancials] = useState<Financials>(DEFAULT_FINANCIALS);
   const [qualitative, setQualitative] = useState<QualitativeScores>(DEFAULT_QUALITATIVE);
   const [valuationHistory, setValuationHistory] = useState<ValuationHistoryItem[]>([]);
+  const [valuationSnapshots, setValuationSnapshots] = useState<ValuationSnapshot[]>([]);
   const [selectedMethodology, setSelectedMethodology] = useState<string>("blended");
   const [calculatedValuation, setCalculatedValuation] = useState<number | null>(null);
 
@@ -153,6 +156,9 @@ export function ValuationProvider({ children }: { children: ReactNode }) {
             const sortedSnapshots = snapshots.sort((a, b) => 
               new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
             );
+            // Store all snapshots for history display
+            setValuationSnapshots(sortedSnapshots);
+            
             const latest = sortedSnapshots[0];
             setFinancials({
               revenue: latest.revenue,
@@ -364,6 +370,19 @@ export function ValuationProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const refreshSnapshots = async () => {
+    if (!currentCompanyId) return;
+    try {
+      const snapshots = await snapshotsApi.getByCompany(currentCompanyId);
+      const sortedSnapshots = snapshots.sort((a, b) => 
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
+      setValuationSnapshots(sortedSnapshots);
+    } catch (error) {
+      console.error("Failed to refresh snapshots:", error);
+    }
+  };
+
   const resetData = () => {
     setIsDemoMode(true);
     setCurrentCompanyId(null);
@@ -371,6 +390,7 @@ export function ValuationProvider({ children }: { children: ReactNode }) {
     setFinancials(DEFAULT_FINANCIALS);
     setQualitative(DEFAULT_QUALITATIVE);
     setValuationHistory([]);
+    setValuationSnapshots([]);
     setSelectedMethodology("blended");
     setCalculatedValuation(null);
   };
@@ -383,6 +403,7 @@ export function ValuationProvider({ children }: { children: ReactNode }) {
       financials,
       qualitative,
       valuationHistory,
+      valuationSnapshots,
       selectedMethodology,
       calculatedValuation,
       setDemoMode: setIsDemoMode,
@@ -396,6 +417,7 @@ export function ValuationProvider({ children }: { children: ReactNode }) {
       saveProfile,
       saveFullProfile,
       saveValuation,
+      refreshSnapshots,
       resetData
     }}>
       {children}

@@ -11,8 +11,8 @@ import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { Plus, History, TrendingUp, AlertTriangle, Save, PlayCircle, RefreshCcw, Flag, CheckCircle2, Clock, Circle, Trash2, Loader2 } from "lucide-react";
 import { useState, useMemo } from "react";
 import simulationBg from '@assets/generated_images/futuristic_financial_simulation_control_panel_background.png';
-import { MOCK_MILESTONES } from "@/lib/constants";
 import { useValuation } from "@/context/ValuationContext";
+import { format } from "date-fns";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { scenariosApi } from "@/lib/api";
 import type { Scenario } from "@shared/schema";
@@ -20,7 +20,7 @@ import { toast } from "sonner";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
 export default function Scenarios() {
-  const { currentCompanyId, financials, calculatedValuation } = useValuation();
+  const { currentCompanyId, financials, calculatedValuation, valuationSnapshots, companyProfile } = useValuation();
   const queryClient = useQueryClient();
   
   const [growthAccel, setGrowthAccel] = useState(50);
@@ -106,6 +106,59 @@ export default function Scenarios() {
     setExitMultiple(assumptions.exitMultiple || 10);
     toast.success(`Loaded scenario: ${scenario.name}`);
   };
+
+  // Generate milestones from real snapshots and scenarios
+  interface Milestone {
+    title: string;
+    date: string;
+    type: 'past' | 'round' | 'future';
+    description: string;
+    impact: string;
+    score: string;
+  }
+
+  const milestones = useMemo((): Milestone[] => {
+    const items: Milestone[] = [];
+    
+    // Add past snapshots as milestones
+    valuationSnapshots.forEach(s => {
+      items.push({
+        title: s.snapshotName || "Valuation Update",
+        date: format(new Date(s.createdAt), 'MMM yyyy'),
+        type: 'past',
+        description: `Revenue: $${(s.revenue / 1000).toFixed(0)}k, Growth: ${s.growthRate}%`,
+        impact: s.calculatedValuation && s.calculatedValuation > 5000000 ? 'Critical' : s.calculatedValuation && s.calculatedValuation > 1000000 ? 'High' : 'Medium',
+        score: s.calculatedValuation ? `$${(s.calculatedValuation / 1000000).toFixed(1)}M` : '+0'
+      });
+    });
+
+    // Add future projected milestones based on current stage
+    const currentYear = new Date().getFullYear();
+    if (companyProfile.stage === 'Seed' || companyProfile.stage === 'Pre-Seed') {
+      items.push({
+        title: 'Series A Target',
+        date: `Q2 ${currentYear + 1}`,
+        type: 'future',
+        description: 'Projected Series A round based on current trajectory',
+        impact: 'Critical',
+        score: `$${((calculatedValuation || financials.revenue * 15) * 2.5 / 1000000).toFixed(0)}M`
+      });
+    }
+
+    // If no items, show placeholder
+    if (items.length === 0) {
+      items.push({
+        title: 'Complete your first valuation',
+        date: 'Get started',
+        type: 'future',
+        description: 'Update your metrics to track valuation milestones',
+        impact: 'High',
+        score: '+0'
+      });
+    }
+
+    return items;
+  }, [valuationSnapshots, companyProfile.stage, calculatedValuation, financials.revenue]);
 
   return (
     <div className="space-y-4 md:space-y-6">
@@ -338,7 +391,7 @@ export default function Scenarios() {
                         <CardContent className="relative">
                             <div className="absolute left-8 top-6 bottom-6 w-px bg-border border-l border-dashed border-primary/30" />
                             <div className="space-y-8 relative">
-                                {MOCK_MILESTONES.map((milestone, i) => (
+                                {milestones.map((milestone, i) => (
                                     <div key={i} className="flex gap-6 items-start relative group">
                                         <div className={`
                                             z-10 size-4 rounded-full border-2 mt-1.5 shrink-0 flex items-center justify-center transition-transform group-hover:scale-125 duration-300
