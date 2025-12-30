@@ -382,11 +382,13 @@ export async function searchCompaniesByName(query: string, limit: number = 10): 
     return [];
   }
 
+  const searchTerm = query.trim().toLowerCase();
+
   try {
     console.log(`[harmonic] Searching companies by name: "${query}"`);
     
-    // Use the search endpoint with a company_name filter
-    // Harmonic API expects: { field, comparator, value } format for filters
+    // Harmonic's filter API has specific requirements that are undocumented.
+    // Use the same approach as searchCompanies - fetch companies and filter client-side.
     const searchResponse = await fetch(`${HARMONIC_BASE_URL}/search/companies`, {
       method: "POST",
       headers: {
@@ -396,17 +398,11 @@ export async function searchCompaniesByName(query: string, limit: number = 10): 
       body: JSON.stringify({
         query: {
           filter_group: {
-            filters: [
-              {
-                field: "company_name",
-                comparator: "contains",
-                value: query.trim()
-              }
-            ],
+            filters: [],
             join_operator: "and"
           },
           pagination: {
-            page_size: limit * 3 // Get more than needed for better matching
+            page_size: 200 // Fetch a good batch for client-side filtering
           }
         }
       }),
@@ -419,14 +415,13 @@ export async function searchCompaniesByName(query: string, limit: number = 10): 
     }
 
     const searchData = await searchResponse.json() as { results: string[], count: number };
-    console.log(`[harmonic] Name search returned ${searchData.results?.length || 0} URNs`);
+    console.log(`[harmonic] Name search returned ${searchData.results?.length || 0} URNs from ${searchData.count} total`);
     
     if (!searchData.results || searchData.results.length === 0) {
       return [];
     }
 
-    // Get company details for the search results
-    const urnsToFetch = searchData.results.slice(0, limit * 2);
+    // Get company details for all results
     const batchResponse = await fetch(`${HARMONIC_BASE_URL}/companies/batchGet`, {
       method: "POST",
       headers: {
@@ -434,7 +429,7 @@ export async function searchCompaniesByName(query: string, limit: number = 10): 
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        urns: urnsToFetch,
+        urns: searchData.results,
       }),
     });
 
@@ -447,10 +442,22 @@ export async function searchCompaniesByName(query: string, limit: number = 10): 
     const companies = await batchResponse.json() as HarmonicCompany[];
     console.log(`[harmonic] Got ${companies.length} company details for name search`);
     
-    // Filter and sort by name relevance
+    // Filter by name match (case-insensitive) and prioritize exact/prefix matches
     const results = companies
       .map(transformToNameSearchResult)
-      .filter(c => c.name && c.name.toLowerCase().includes(query.toLowerCase()))
+      .filter(c => c.name && c.name.toLowerCase().includes(searchTerm))
+      .sort((a, b) => {
+        const aName = a.name.toLowerCase();
+        const bName = b.name.toLowerCase();
+        // Exact match first
+        if (aName === searchTerm && bName !== searchTerm) return -1;
+        if (bName === searchTerm && aName !== searchTerm) return 1;
+        // Starts with match second
+        if (aName.startsWith(searchTerm) && !bName.startsWith(searchTerm)) return -1;
+        if (bName.startsWith(searchTerm) && !aName.startsWith(searchTerm)) return 1;
+        // Alphabetical
+        return aName.localeCompare(bName);
+      })
       .slice(0, limit);
 
     console.log(`[harmonic] Returning ${results.length} name-matched companies`);
