@@ -178,7 +178,7 @@ export default function TeamManagement() {
           <CardContent>
             <form onSubmit={handleSendInvite} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="invite-email">Email Address</Label>
+                <Label htmlFor="invite-email">Team Member's Email</Label>
                 <div className="flex gap-2">
                   <Input
                     id="invite-email"
@@ -193,10 +193,13 @@ export default function TeamManagement() {
                     disabled={!inviteEmail.trim() || sendInviteMutation.isPending}
                     data-testid="button-send-invite"
                   >
-                    <Send className="size-4 mr-2" />
-                    Send
+                    <UserPlus className="size-4 mr-2" />
+                    Create Invite
                   </Button>
                 </div>
+                <p className="text-xs text-muted-foreground">
+                  After creating the invite, copy and share the link with your team member.
+                </p>
               </div>
             </form>
 
@@ -206,31 +209,23 @@ export default function TeamManagement() {
                   <Clock className="size-4" />
                   Pending Invites
                 </h4>
-                <div className="space-y-2">
+                <div className="space-y-3">
                   {teamData.invites.map((invite) => (
                     <div 
                       key={invite.id} 
-                      className="flex items-center justify-between p-3 rounded-lg bg-secondary/30 border"
+                      className="p-4 rounded-lg bg-secondary/30 border space-y-3"
                       data-testid={`invite-${invite.id}`}
                     >
-                      <div className="flex items-center gap-3">
-                        <Mail className="size-4 text-muted-foreground" />
-                        <div>
-                          <p className="text-sm font-medium">{invite.inviteEmail}</p>
-                          <p className="text-xs text-muted-foreground">
-                            Expires {new Date(invite.expiresAt).toLocaleDateString()}
-                          </p>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <Mail className="size-4 text-muted-foreground" />
+                          <div>
+                            <p className="text-sm font-medium">{invite.inviteEmail}</p>
+                            <p className="text-xs text-muted-foreground">
+                              Expires {new Date(invite.expiresAt).toLocaleDateString()}
+                            </p>
+                          </div>
                         </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => copyInviteLink(invite.inviteToken)}
-                          data-testid={`button-copy-link-${invite.id}`}
-                        >
-                          <Copy className="size-4" />
-                        </Button>
                         <Button
                           variant="ghost"
                           size="sm"
@@ -238,6 +233,21 @@ export default function TeamManagement() {
                           data-testid={`button-cancel-invite-${invite.id}`}
                         >
                           <Trash2 className="size-4 text-destructive" />
+                        </Button>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="flex-1 text-xs font-mono bg-background rounded px-3 py-2 border truncate">
+                          {`${window.location.origin}/invite/${invite.inviteToken}`}
+                        </div>
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => copyInviteLink(invite.inviteToken)}
+                          data-testid={`button-copy-link-${invite.id}`}
+                          className="shrink-0"
+                        >
+                          <Copy className="size-4 mr-2" />
+                          Copy Link
                         </Button>
                       </div>
                     </div>

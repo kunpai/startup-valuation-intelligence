@@ -5,6 +5,7 @@ import { insertCompanySchema, insertValuationSnapshotSchema, insertScenarioSchem
 import { registerMiraRoutes } from "./mira";
 import { calculateValuation, type ValuationInput } from "./valuation";
 import { isAuthenticated } from "./replit_integrations/auth";
+import { searchCompanies, getCompanyByDomain } from "./harmonic";
 import crypto from "crypto";
 
 // Get user email from authenticated request
@@ -504,6 +505,49 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Error removing member:", error);
       res.status(500).json({ error: "Failed to remove member" });
+    }
+  });
+
+  // ==================== Market Comparables (Harmonic API) ====================
+  
+  // Search for comparable companies
+  app.get("/api/harmonic/search", isAuthenticated, async (req, res) => {
+    try {
+      const { sector, stage, region, limit } = req.query;
+      
+      const results = await searchCompanies({
+        sector: sector as string | undefined,
+        stage: stage as string | undefined,
+        region: region as string | undefined,
+        limit: limit ? parseInt(limit as string) : 20,
+      });
+      
+      res.json(results);
+    } catch (error) {
+      console.error("Error searching Harmonic:", error);
+      res.status(500).json({ error: "Failed to search comparable companies" });
+    }
+  });
+  
+  // Lookup company by domain
+  app.get("/api/harmonic/company", isAuthenticated, async (req, res) => {
+    try {
+      const { domain } = req.query;
+      
+      if (!domain) {
+        return res.status(400).json({ error: "Domain is required" });
+      }
+      
+      const company = await getCompanyByDomain(domain as string);
+      
+      if (!company) {
+        return res.status(404).json({ error: "Company not found" });
+      }
+      
+      res.json(company);
+    } catch (error) {
+      console.error("Error looking up company:", error);
+      res.status(500).json({ error: "Failed to lookup company" });
     }
   });
 

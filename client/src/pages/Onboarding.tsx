@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useValuation } from "@/context/ValuationContext";
 import { useLocation } from "wouter";
+import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,9 +12,24 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { SECTORS, STAGES, REGIONS, METHODOLOGY_DESCRIPTIONS, MOCK_COMPS } from "@/lib/constants";
-import { ArrowRight, Check, Sparkles, Building2, TrendingUp, Users, Rocket, History, Scale, Briefcase, Plus, Trash2, ArrowLeft, AlertCircle } from "lucide-react";
+import { ArrowRight, Check, Sparkles, Building2, TrendingUp, Users, Rocket, History, Scale, Briefcase, Plus, Trash2, ArrowLeft, AlertCircle, Loader2, Search } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { z } from "zod";
+
+interface HarmonicCompany {
+  id: string;
+  name: string;
+  description: string | null;
+  sector: string | null;
+  stage: string | null;
+  region: string | null;
+  valuation: number | null;
+  fundingTotal: number | null;
+  lastFundingRound: string | null;
+  headcount: number | null;
+  website: string | null;
+  logoUrl: string | null;
+}
 
 const basicsSchema = z.object({
   name: z.string().min(1, "Company name is required"),
@@ -22,6 +38,122 @@ const basicsSchema = z.object({
   region: z.string().min(1, "Please select a region"),
   foundedYear: z.number().min(1900, "Please select a founded year")
 });
+
+function CompsStep({ formData, togglePeer }: { 
+  formData: { sector: string; stage: string; region: string; selectedPeers: string[] }; 
+  togglePeer: (name: string) => void 
+}) {
+  const { data: harmonicComps, isLoading, error } = useQuery<HarmonicCompany[]>({
+    queryKey: ["/api/harmonic/search", formData.sector, formData.stage, formData.region],
+    queryFn: async () => {
+      const params = new URLSearchParams({ limit: "15" });
+      if (formData.sector) params.set("sector", formData.sector);
+      if (formData.stage) params.set("stage", formData.stage);
+      if (formData.region) params.set("region", formData.region);
+      const res = await fetch(`/api/harmonic/search?${params}`, { credentials: "include" });
+      if (!res.ok) throw new Error("Failed to fetch");
+      return res.json();
+    },
+    staleTime: 60000,
+    enabled: !!formData.sector,
+  });
+
+  const companies = harmonicComps && harmonicComps.length > 0 
+    ? harmonicComps 
+    : MOCK_COMPS.filter(c => c.sector === formData.sector).map(c => ({
+        id: c.company,
+        name: c.company,
+        description: null,
+        sector: c.sector,
+        stage: c.round,
+        region: c.region,
+        valuation: c.valuation,
+        fundingTotal: c.valuation,
+        lastFundingRound: c.round,
+        headcount: null,
+        website: null,
+        logoUrl: null,
+      }));
+
+  const formatFunding = (amount: number | null) => {
+    if (!amount) return "N/A";
+    if (amount >= 1000000000) return `$${(amount / 1000000000).toFixed(1)}B`;
+    if (amount >= 1000000) return `$${(amount / 1000000).toFixed(1)}M`;
+    if (amount >= 1000) return `$${(amount / 1000).toFixed(0)}K`;
+    return `$${amount}`;
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Search className="size-4 text-muted-foreground" />
+          <Label>Similar Companies ({formData.sector})</Label>
+        </div>
+        <span className="text-xs text-muted-foreground">{formData.selectedPeers.length}/5 selected</span>
+      </div>
+      
+      <div className="grid gap-3 h-[300px] overflow-y-auto pr-2">
+        {isLoading ? (
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="size-6 animate-spin text-primary" />
+            <span className="ml-2 text-muted-foreground">Searching market database...</span>
+          </div>
+        ) : companies.length > 0 ? (
+          companies.map((company) => (
+            <div 
+              key={company.id} 
+              onClick={() => togglePeer(company.name)}
+              className={`
+                cursor-pointer flex items-center justify-between p-3 rounded-lg border transition-all
+                ${formData.selectedPeers.includes(company.name) 
+                  ? 'bg-primary/10 border-primary shadow-sm' 
+                  : 'hover:bg-secondary/50 hover:border-primary/30'}
+              `}
+              data-testid={`comp-${company.id}`}
+            >
+              <div className="flex-1 min-w-0">
+                <div className="font-medium flex items-center gap-2 flex-wrap">
+                  {company.name}
+                  {company.stage && <Badge variant="secondary" className="text-[10px] h-5">{company.stage}</Badge>}
+                </div>
+                <div className="text-xs text-muted-foreground mt-1 flex gap-2 flex-wrap">
+                  <span>Funding: {formatFunding(company.fundingTotal)}</span>
+                  {company.headcount && <span>• {company.headcount} employees</span>}
+                  {company.region && <span>• {company.region}</span>}
+                </div>
+                {company.description && (
+                  <p className="text-xs text-muted-foreground/70 mt-1 line-clamp-1">{company.description}</p>
+                )}
+              </div>
+              <div className={`
+                size-5 rounded-full border flex items-center justify-center transition-colors shrink-0 ml-3
+                ${formData.selectedPeers.includes(company.name) ? 'bg-primary border-primary text-primary-foreground' : 'border-muted-foreground/30'}
+              `}>
+                {formData.selectedPeers.includes(company.name) && <Check className="size-3" />}
+              </div>
+            </div>
+          ))
+        ) : (
+          <div className="text-center py-8 text-muted-foreground">
+            <p>No companies found for this sector.</p>
+            <p className="text-xs mt-2">Try adjusting your sector in Step 1.</p>
+          </div>
+        )}
+      </div>
+      
+      {harmonicComps && harmonicComps.length > 0 ? (
+        <p className="text-xs text-emerald-600 italic text-center flex items-center justify-center gap-1">
+          <Check className="size-3" /> Live data from Harmonic startup database
+        </p>
+      ) : (
+        <p className="text-xs text-muted-foreground italic text-center">
+          Using sample data • Connect Harmonic API for real-time comparables
+        </p>
+      )}
+    </div>
+  );
+}
 
 
 export default function Onboarding() {
@@ -382,54 +514,7 @@ export default function Onboarding() {
         title: "Market Peers",
         description: "Select up to 5 similar companies to benchmark against.",
         icon: <Briefcase className="size-6 text-blue-500" />,
-        content: (
-            <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                    <Label>Suggested Peers ({formData.sector})</Label>
-                    <span className="text-xs text-muted-foreground">{formData.selectedPeers.length}/5 selected</span>
-                </div>
-                
-                <div className="grid gap-3 h-[300px] overflow-y-auto pr-2">
-                    {MOCK_COMPS.filter(c => c.sector === formData.sector).map((company, i) => (
-                        <div 
-                            key={i} 
-                            onClick={() => togglePeer(company.company)}
-                            className={`
-                                cursor-pointer flex items-center justify-between p-3 rounded-lg border transition-all
-                                ${formData.selectedPeers.includes(company.company) 
-                                    ? 'bg-primary/10 border-primary shadow-sm' 
-                                    : 'hover:bg-secondary/50 hover:border-primary/30'}
-                            `}
-                        >
-                            <div>
-                                <div className="font-medium flex items-center gap-2">
-                                    {company.company}
-                                    <Badge variant="secondary" className="text-[10px] h-5">{company.round}</Badge>
-                                </div>
-                                <div className="text-xs text-muted-foreground mt-1">
-                                    Val: ${(company.valuation/1000000).toFixed(1)}M • Rev: ${(company.revenue/1000).toFixed(0)}k
-                                </div>
-                            </div>
-                            <div className={`
-                                size-5 rounded-full border flex items-center justify-center transition-colors
-                                ${formData.selectedPeers.includes(company.company) ? 'bg-primary border-primary text-primary-foreground' : 'border-muted-foreground/30'}
-                            `}>
-                                {formData.selectedPeers.includes(company.company) && <Check className="size-3" />}
-                            </div>
-                        </div>
-                    ))}
-                    {MOCK_COMPS.filter(c => c.sector === formData.sector).length === 0 && (
-                        <div className="text-center py-8 text-muted-foreground">
-                            <p>No exact sector matches found in mock database.</p>
-                            <p className="text-xs mt-2">Try changing sector in Step 1.</p>
-                        </div>
-                    )}
-                </div>
-                <p className="text-xs text-muted-foreground italic text-center">
-                    Note: In a live app, this would search a real-time market database.
-                </p>
-            </div>
-        )
+        content: <CompsStep formData={formData} togglePeer={togglePeer} />
     },
     // Step 5: Financials
     {
