@@ -386,32 +386,33 @@ export async function getCompanyByDomain(domain: string): Promise<CompanyNameSea
   }
 }
 
-// Search companies by name - uses domain lookup first if input looks like a domain
+// Search companies by domain - fetches companies and filters by website match
 export async function searchCompaniesByName(query: string, limit: number = 10): Promise<CompanyNameSearchResult[]> {
   if (!HARMONIC_API_KEY) {
     console.error("HARMONIC_API_KEY not configured");
     return [];
   }
 
-  if (!query || query.trim().length < 2) {
+  if (!query || query.trim().length < 3) {
     return [];
   }
 
-  const searchTerm = query.trim();
-
-  // Check if input looks like a domain (contains a dot)
-  if (searchTerm.includes(".")) {
-    const domainResult = await getCompanyByDomain(searchTerm);
-    if (domainResult) {
-      return [domainResult];
-    }
+  let searchTerm = query.trim().toLowerCase();
+  // Remove common prefixes
+  searchTerm = searchTerm.replace(/^https?:\/\//, "").replace(/^www\./, "");
+  
+  // Only proceed if it looks like a domain (has a dot)
+  if (!searchTerm.includes(".")) {
+    return [];
   }
 
+  // Extract domain without TLD for matching (e.g., "stripe" from "stripe.com")
+  const domainBase = searchTerm.split(".")[0];
+  
   try {
-    console.log(`[harmonic] Searching companies by name: "${searchTerm}"`);
+    console.log(`[harmonic] Looking up by domain: "${searchTerm}" (base: ${domainBase})`);
     
-    // Fetch companies and filter client-side (Harmonic's filter API is restrictive)
-    // Keep batch small for speed
+    // Fetch companies and filter by domain match
     const searchResponse = await fetch(`${HARMONIC_BASE_URL}/search/companies`, {
       method: "POST",
       headers: {
@@ -425,20 +426,18 @@ export async function searchCompaniesByName(query: string, limit: number = 10): 
             join_operator: "and"
           },
           pagination: {
-            page_size: 100
+            page_size: 200
           }
         }
       }),
     });
 
     if (!searchResponse.ok) {
-      const errorText = await searchResponse.text();
-      console.error("[harmonic] Name search failed:", errorText);
+      console.error("[harmonic] Domain search failed");
       return [];
     }
 
     const searchData = await searchResponse.json() as { results: string[], count: number };
-    console.log(`[harmonic] Got ${searchData.results?.length || 0} URNs`);
     
     if (!searchData.results || searchData.results.length === 0) {
       return [];
@@ -461,27 +460,24 @@ export async function searchCompaniesByName(query: string, limit: number = 10): 
     }
 
     const companies = await batchResponse.json() as HarmonicCompany[];
-    const lowerSearch = searchTerm.toLowerCase();
     
-    // Filter and sort by name relevance
+    // Filter by DOMAIN match (not name match)
     const results = companies
-      .map(transformToNameSearchResult)
-      .filter(c => c.name && c.name.toLowerCase().includes(lowerSearch))
-      .sort((a, b) => {
-        const aName = a.name.toLowerCase();
-        const bName = b.name.toLowerCase();
-        if (aName === lowerSearch) return -1;
-        if (bName === lowerSearch) return 1;
-        if (aName.startsWith(lowerSearch) && !bName.startsWith(lowerSearch)) return -1;
-        if (bName.startsWith(lowerSearch) && !aName.startsWith(lowerSearch)) return 1;
-        return aName.localeCompare(bName);
+      .filter(c => {
+        const website = c.website?.domain?.toLowerCase() || "";
+        // Match if website contains the domain or domain base
+        return website.includes(searchTerm) || 
+               website.includes(domainBase) ||
+               website === domainBase ||
+               c.name?.toLowerCase() === domainBase;
       })
+      .map(transformToNameSearchResult)
       .slice(0, limit);
 
-    console.log(`[harmonic] Returning ${results.length} name-matched companies`);
+    console.log(`[harmonic] Found ${results.length} companies matching domain "${searchTerm}"`);
     return results;
   } catch (error) {
-    console.error("[harmonic] Name search error:", error);
+    console.error("[harmonic] Domain search error:", error);
     return [];
   }
 }

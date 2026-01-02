@@ -577,7 +577,7 @@ export default function Onboarding() {
                 )}
                 <div className="space-y-2 relative">
                     <Label className="flex items-center gap-2">
-                        Company Website <span className="text-muted-foreground text-xs">(instant lookup)</span>
+                        Company Website <span className="text-muted-foreground text-xs">(optional - for auto-fill)</span>
                         {isSearching && <Loader2 className="size-3 animate-spin text-primary" />}
                     </Label>
                     <div className="relative">
@@ -595,37 +595,48 @@ export default function Onboarding() {
                     {showSearchResults && searchResults && searchResults.length > 0 && (
                         <div 
                             ref={dropdownRef}
-                            className="absolute z-50 w-full mt-1 bg-card border rounded-lg shadow-xl"
+                            className="absolute z-50 w-full mt-1 bg-card border-2 border-emerald-500 rounded-lg shadow-xl"
                         >
-                            <div className="p-2 border-b bg-emerald-500/10">
-                                <p className="text-xs text-emerald-600 flex items-center gap-1">
-                                    <Sparkles className="size-3" /> Found in database - click to auto-fill
+                            <div className="p-2 border-b bg-emerald-500/20">
+                                <p className="text-sm text-emerald-600 font-medium flex items-center gap-1">
+                                    <Sparkles className="size-4" /> Found! Click to auto-fill your company data
                                 </p>
                             </div>
                             {searchResults.map((company) => (
                                 <div
                                     key={company.id}
-                                    className="p-3 hover:bg-secondary/50 cursor-pointer transition-colors"
+                                    className="p-4 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 cursor-pointer transition-colors"
                                     onClick={() => handleSelectCompany(company)}
                                     data-testid={`search-result-${company.id}`}
                                 >
-                                    <p className="font-medium">{company.name}</p>
+                                    <p className="font-semibold text-lg">{company.name}</p>
                                     {company.description && (
-                                        <p className="text-xs text-muted-foreground line-clamp-1">{company.description}</p>
+                                        <p className="text-sm text-muted-foreground line-clamp-2 mt-1">{company.description}</p>
                                     )}
+                                    <div className="flex flex-wrap gap-2 mt-2">
+                                        {company.stage && <Badge variant="outline">{company.stage}</Badge>}
+                                        {company.industryTags?.slice(0,2).map(t => <Badge key={t} variant="secondary" className="text-xs">{t}</Badge>)}
+                                    </div>
                                 </div>
                             ))}
                         </div>
                     )}
                     
                     {selectedFromSearch && (
-                        <p className="text-xs text-emerald-600 flex items-center gap-1 mt-1">
-                            <Check className="size-3" /> Company data loaded from Harmonic
+                        <div className="mt-2 p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-lg">
+                            <p className="text-sm text-emerald-600 font-medium flex items-center gap-2">
+                                <Check className="size-4" /> Company data loaded from Harmonic!
+                            </p>
+                            <p className="text-xs text-muted-foreground mt-1">
+                                Industry, stage, and other fields have been auto-filled below.
+                            </p>
+                        </div>
+                    )}
+                    {!selectedFromSearch && (
+                        <p className="text-xs text-muted-foreground">
+                            Enter your domain (e.g. stripe.com) to auto-fill company data, or skip and fill manually
                         </p>
                     )}
-                    <p className="text-xs text-muted-foreground">
-                        Enter your domain (e.g. stripe.com) for instant data lookup
-                    </p>
                 </div>
                 
                 <div className="space-y-2">
