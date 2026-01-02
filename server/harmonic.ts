@@ -335,7 +335,7 @@ function transformToNameSearchResult(company: HarmonicCompany): CompanyNameSearc
   };
 }
 
-// Fast lookup by company domain - direct Harmonic API call
+// Fast lookup by company domain using GET endpoint
 export async function getCompanyByDomain(domain: string): Promise<CompanyNameSearchResult | null> {
   if (!HARMONIC_API_KEY) {
     console.error("HARMONIC_API_KEY not configured");
@@ -351,23 +351,19 @@ export async function getCompanyByDomain(domain: string): Promise<CompanyNameSea
   // Remove trailing slash and path
   cleanDomain = cleanDomain.split("/")[0];
 
-  if (!cleanDomain || cleanDomain.length < 3) {
+  if (!cleanDomain || cleanDomain.length < 4 || !cleanDomain.includes(".")) {
     return null;
   }
 
   try {
     console.log(`[harmonic] Looking up company by domain: "${cleanDomain}"`);
     
-    // Direct company lookup by domain - very fast!
-    const response = await fetch(`${HARMONIC_BASE_URL}/companies`, {
-      method: "POST",
+    // Use GET endpoint with website_domain query parameter
+    const response = await fetch(`${HARMONIC_BASE_URL}/companies?website_domain=${encodeURIComponent(cleanDomain)}`, {
+      method: "GET",
       headers: {
         "apikey": HARMONIC_API_KEY,
-        "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        website_domain: cleanDomain,
-      }),
     });
 
     if (!response.ok) {
