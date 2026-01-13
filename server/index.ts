@@ -2,8 +2,6 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
-import { setupAuth, registerAuthRoutes, getSession } from "./replit_integrations/auth";
-import { setupRealtime } from "./realtime";
 
 const app = express();
 const httpServer = createServer(app);
@@ -23,18 +21,6 @@ app.use(
 );
 
 app.use(express.urlencoded({ extended: false }));
-
-// Get session middleware for both Express and Socket.IO
-const sessionMiddleware = getSession();
-
-// Set up authentication (BEFORE other routes)
-(async () => {
-  await setupAuth(app);
-  registerAuthRoutes(app);
-})();
-
-// Set up realtime collaboration with session middleware for auth
-setupRealtime(httpServer, sessionMiddleware);
 
 export function log(message: string, source = "express") {
   const formattedTime = new Date().toLocaleTimeString("en-US", {
@@ -99,14 +85,7 @@ app.use((req, res, next) => {
   // this serves both the API and the client.
   // It is the only port that is not firewalled.
   const port = parseInt(process.env.PORT || "5000", 10);
-  httpServer.listen(
-    {
-      port,
-      host: "0.0.0.0",
-      reusePort: true,
-    },
-    () => {
-      log(`serving on port ${port}`);
-    },
-  );
+  httpServer.listen(port, "0.0.0.0", () => {
+    log(`serving on port ${port}`);
+  });
 })();

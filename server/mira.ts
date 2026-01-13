@@ -1,11 +1,10 @@
 import type { Express, Request, Response } from "express";
 import OpenAI from "openai";
-import { storage } from "./storage";
-import { isAuthenticated } from "./replit_integrations/auth";
+import { storage, DEFAULT_USER } from "./memoryStorage";
 
 const openai = new OpenAI({
-  apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
-  baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
+  apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY || "sk-placeholder",
+  baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL || "https://api.openai.com/v1",
 });
 
 const MIRA_SYSTEM_PROMPT = `You are Mira, an AI CFO and valuation advisor for startup founders. You are friendly, knowledgeable, and supportive.
@@ -48,14 +47,8 @@ interface MiraRequest {
   };
 }
 
-// Helper to get userId from authenticated request
-function getUserId(req: Express.Request): string {
-  const user = req.user as any;
-  return user?.claims?.sub || "";
-}
-
 export function registerMiraRoutes(app: Express): void {
-  app.post("/api/mira/chat", isAuthenticated, async (req: Request, res: Response) => {
+  app.post("/api/mira/chat", async (req: Request, res: Response) => {
     try {
       const { message, companyId, context }: MiraRequest = req.body;
 
@@ -64,13 +57,12 @@ export function registerMiraRoutes(app: Express): void {
       }
 
       let companyContext = "";
-      
+
       if (companyId) {
-        const userId = getUserId(req);
-        const company = await storage.getCompany(companyId, userId);
+        const company = await storage.getCompany(companyId);
         const snapshots = await storage.getSnapshotsByCompany(companyId);
         const latestSnapshot = snapshots[0];
-        
+
         if (company) {
           companyContext = `
 User's Company Profile:
@@ -81,7 +73,7 @@ User's Company Profile:
 - Founded: ${company.foundedYear}
 `;
         }
-        
+
         if (latestSnapshot) {
           companyContext += `
 Current Financial Snapshot:
@@ -129,28 +121,37 @@ Qualitative Scores:
       res.setHeader("Cache-Control", "no-cache");
       res.setHeader("Connection", "keep-alive");
 
-      const stream = await openai.chat.completions.create({
-        model: "gpt-4o",
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: message }
-        ],
-        stream: true,
-        max_tokens: 1024,
-      });
+      try {
+        const stream = await openai.chat.completions.create({
+          model: "gpt-4o",
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: message }
+          ],
+          stream: true,
+          max_tokens: 1024,
+        });
 
-      let fullResponse = "";
+        let fullResponse = "";
 
-      for await (const chunk of stream) {
-        const content = chunk.choices[0]?.delta?.content || "";
-        if (content) {
-          fullResponse += content;
-          res.write(`data: ${JSON.stringify({ content })}\n\n`);
+        for await (const chunk of stream) {
+          const content = chunk.choices[0]?.delta?.content || "";
+          if (content) {
+            fullResponse += content;
+            res.write(`data: ${JSON.stringify({ content })}\n\n`);
+          }
         }
-      }
 
-      res.write(`data: ${JSON.stringify({ done: true, fullResponse })}\n\n`);
-      res.end();
+        res.write(`data: ${JSON.stringify({ done: true, fullResponse })}\n\n`);
+        res.end();
+      } catch (aiError) {
+        console.error("OpenAI API error:", aiError);
+        // Return a helpful fallback message
+        const fallbackMessage = "I'm currently unable to connect to my AI service. Please make sure the OpenAI API is configured correctly. In the meantime, here are some general valuation tips: Focus on revenue growth, team strength, and market opportunity when pitching to investors.";
+        res.write(`data: ${JSON.stringify({ content: fallbackMessage })}\n\n`);
+        res.write(`data: ${JSON.stringify({ done: true, fullResponse: fallbackMessage })}\n\n`);
+        res.end();
+      }
     } catch (error) {
       console.error("Mira chat error:", error);
       if (res.headersSent) {
@@ -162,10 +163,10 @@ Qualitative Scores:
     }
   });
 
-  app.post("/api/mira/quick-insight", isAuthenticated, async (req: Request, res: Response) => {
+  app.post("/api/mira/quick-insight", async (req: Request, res: Response) => {
     try {
       const { type, data } = req.body;
-      
+
       const prompts: Record<string, string> = {
         valuation: `Based on this startup data, provide a 2-sentence valuation insight: Revenue: $${data?.revenue || 0}, Growth: ${data?.growthRate || 0}%, Stage: ${data?.stage || 'Early'}, Sector: ${data?.sector || 'Tech'}`,
         improvement: `Suggest one specific action this startup can take to increase their valuation in the next 90 days. Revenue: $${data?.revenue || 0}, Growth: ${data?.growthRate || 0}%`,
@@ -174,16 +175,21 @@ Qualitative Scores:
 
       const prompt = prompts[type] || prompts.valuation;
 
-      const response = await openai.chat.completions.create({
-        model: "gpt-4o-mini",
-        messages: [
-          { role: "system", content: "You are a concise startup valuation expert. Give brief, actionable insights in 2-3 sentences max." },
-          { role: "user", content: prompt }
-        ],
-        max_tokens: 150,
-      });
+      try {
+        const response = await openai.chat.completions.create({
+          model: "gpt-4o-mini",
+          messages: [
+            { role: "system", content: "You are a concise startup valuation expert. Give brief, actionable insights in 2-3 sentences max." },
+            { role: "user", content: prompt }
+          ],
+          max_tokens: 150,
+        });
 
-      res.json({ insight: response.choices[0]?.message?.content || "Unable to generate insight" });
+        res.json({ insight: response.choices[0]?.message?.content || "Unable to generate insight" });
+      } catch (aiError) {
+        console.error("OpenAI API error:", aiError);
+        res.json({ insight: "Focus on demonstrating strong revenue growth and a clear path to profitability to maximize your valuation." });
+      }
     } catch (error) {
       console.error("Quick insight error:", error);
       res.status(500).json({ error: "Failed to generate insight" });
