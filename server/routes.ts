@@ -480,5 +480,177 @@ export async function registerRoutes(
     res.redirect("/");
   });
 
+  // ==================== Valorant Live Score Ranking ====================
+  
+  // Get Valorant live scores (mock data for now)
+  app.get("/api/valorant/live-scores", async (req, res) => {
+    try {
+      // Mock data - in production, this would fetch from Valorant API
+      const liveScores = {
+        matches: [
+          {
+            id: "match-1",
+            tournament: "VCT Champions",
+            team1: { name: "Sentinels", score: 13, logo: "🛡️" },
+            team2: { name: "Team Liquid", score: 11, logo: "🐴" },
+            status: "Live",
+            map: "Ascent"
+          },
+          {
+            id: "match-2",
+            tournament: "VCT Champions",
+            team1: { name: "Fnatic", score: 8, logo: "🦊" },
+            team2: { name: "LOUD", score: 5, logo: "🔊" },
+            status: "Live",
+            map: "Bind"
+          },
+          {
+            id: "match-3",
+            tournament: "VCT Masters",
+            team1: { name: "Paper Rex", score: 13, logo: "🦖" },
+            team2: { name: "DRX", score: 10, logo: "🐉" },
+            status: "Finished",
+            map: "Haven"
+          }
+        ],
+        rankings: [
+          { rank: 1, team: "Sentinels", points: 2850, wins: 28, losses: 5 },
+          { rank: 2, team: "Fnatic", points: 2720, wins: 26, losses: 7 },
+          { rank: 3, team: "LOUD", points: 2680, wins: 25, losses: 8 },
+          { rank: 4, team: "Team Liquid", points: 2590, wins: 24, losses: 9 },
+          { rank: 5, team: "Paper Rex", points: 2510, wins: 23, losses: 10 }
+        ]
+      };
+      res.json(liveScores);
+    } catch (error) {
+      console.error("Error fetching Valorant live scores:", error);
+      res.status(500).json({ error: "Failed to fetch Valorant live scores" });
+    }
+  });
+
+  // ==================== Stake.com Plugin ====================
+  
+  // Get stake.com data (mock data for now)
+  app.get("/api/stake/stats", async (req, res) => {
+    try {
+      // Mock data - in production, this would integrate with stake.com API
+      const stakeData = {
+        recentBets: [
+          { id: "bet-1", game: "Dice", amount: 100, multiplier: 2.5, profit: 150, timestamp: new Date().toISOString() },
+          { id: "bet-2", game: "Crash", amount: 50, multiplier: 1.8, profit: -50, timestamp: new Date().toISOString() },
+          { id: "bet-3", game: "Roulette", amount: 75, multiplier: 3.0, profit: 150, timestamp: new Date().toISOString() }
+        ],
+        stats: {
+          totalBets: 1247,
+          totalWagered: 12450.50,
+          totalProfit: 1234.75,
+          winRate: 48.3,
+          biggestWin: 5000.00
+        },
+        liveGames: [
+          { name: "Dice", players: 342, status: "active" },
+          { name: "Crash", players: 189, status: "active" },
+          { name: "Roulette", players: 256, status: "active" },
+          { name: "Blackjack", players: 145, status: "active" }
+        ]
+      };
+      res.json(stakeData);
+    } catch (error) {
+      console.error("Error fetching stake.com data:", error);
+      res.status(500).json({ error: "Failed to fetch stake.com data" });
+    }
+  });
+
+  // ==================== Bedtime Story Generator ====================
+  
+  // Generate bedtime story using AI
+  app.post("/api/bedtime-story/generate", async (req, res) => {
+    try {
+      const { theme, characters, ageGroup, length } = req.body;
+      
+      if (!theme) {
+        return res.status(400).json({ error: "Theme is required" });
+      }
+
+      const apiKey = process.env.AI_INTEGRATIONS_OPENAI_API_KEY;
+      
+      // If no API key, return a mock story
+      if (!apiKey || apiKey === "sk-placeholder") {
+        const mockStory = `Once upon a time, there was ${theme.toLowerCase()}. ${characters ? `Together with ${characters}, they` : 'They'} embarked on a wonderful adventure.
+
+As the sun began to set, painting the sky in beautiful shades of orange and pink, our friends discovered something magical. They learned that kindness and courage can make even the biggest challenges feel small.
+
+When the stars came out to twinkle in the night sky, ${characters ? 'they all' : 'they'} felt warm and safe, knowing that tomorrow would bring new adventures. And as they closed their eyes to sleep, they dreamed of all the wonderful things yet to come.
+
+The end. Sweet dreams! 🌙✨`;
+
+        return res.json({
+          story: mockStory,
+          theme,
+          characters,
+          ageGroup,
+          length,
+          generatedAt: new Date().toISOString(),
+          note: "This is a demo story. Configure OPENAI_API_KEY for AI-generated stories."
+        });
+      }
+
+      // Use OpenAI to generate a bedtime story
+      const prompt = `Generate a ${length || 'short'} bedtime story for ${ageGroup || 'children aged 5-8'}.
+Theme: ${theme}
+${characters ? `Characters: ${characters}` : ''}
+
+The story should be:
+- Calming and suitable for bedtime
+- Age-appropriate
+- Have a gentle, positive message
+- End with a peaceful conclusion
+
+Please write the story in a warm, soothing narrative style.`;
+
+      const completion = await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${apiKey}`
+        },
+        body: JSON.stringify({
+          model: "gpt-4o",
+          messages: [
+            {
+              role: "system",
+              content: "You are a creative children's story writer who specializes in calming, imaginative bedtime stories."
+            },
+            {
+              role: "user",
+              content: prompt
+            }
+          ],
+          temperature: 0.8,
+          max_tokens: 1000
+        })
+      });
+
+      if (!completion.ok) {
+        throw new Error("Failed to generate story");
+      }
+
+      const data = await completion.json();
+      const story = data.choices[0].message.content;
+
+      res.json({
+        story,
+        theme,
+        characters,
+        ageGroup,
+        length,
+        generatedAt: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error("Error generating bedtime story:", error);
+      res.status(500).json({ error: "Failed to generate bedtime story" });
+    }
+  });
+
   return httpServer;
 }

@@ -16,6 +16,9 @@ import PlatformOverview from "@/pages/PlatformOverview";
 import Landing from "@/pages/Landing";
 import TeamManagement from "@/pages/TeamManagement";
 import AcceptInvite from "@/pages/AcceptInvite";
+import ValorantScores from "@/pages/ValorantScores";
+import StakePlugin from "@/pages/StakePlugin";
+import BedtimeStory from "@/pages/BedtimeStory";
 import { ValuationProvider, useValuation } from "@/context/ValuationContext";
 import { ThemeProvider } from "@/components/theme-provider";
 import { useAuth } from "@/hooks/use-auth";
@@ -41,6 +44,9 @@ function AuthenticatedRouter() {
                 <Route path="/reports/deal-room" component={DealRoom} />
                 <Route path="/reports/:id" component={ReportDetail} />
                 <Route path="/team" component={TeamManagement} />
+                <Route path="/valorant" component={ValorantScores} />
+                <Route path="/stake" component={StakePlugin} />
+                <Route path="/bedtime-story" component={BedtimeStory} />
                 <Route component={NotFound} />
             </Switch>
          </AppLayout>
