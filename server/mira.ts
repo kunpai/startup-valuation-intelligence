@@ -1,6 +1,7 @@
 import type { Express, Request, Response } from "express";
 import OpenAI from "openai";
 import { storage } from "./storage";
+import { isAuthenticated } from "./replit_integrations/auth";
 
 const openai = new OpenAI({
   apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
@@ -47,8 +48,14 @@ interface MiraRequest {
   };
 }
 
+// Helper to get userId from authenticated request
+function getUserId(req: Express.Request): string {
+  const user = req.user as any;
+  return user?.claims?.sub || "";
+}
+
 export function registerMiraRoutes(app: Express): void {
-  app.post("/api/mira/chat", async (req: Request, res: Response) => {
+  app.post("/api/mira/chat", isAuthenticated, async (req: Request, res: Response) => {
     try {
       const { message, companyId, context }: MiraRequest = req.body;
 
@@ -59,7 +66,8 @@ export function registerMiraRoutes(app: Express): void {
       let companyContext = "";
       
       if (companyId) {
-        const company = await storage.getCompany(companyId);
+        const userId = getUserId(req);
+        const company = await storage.getCompany(companyId, userId);
         const snapshots = await storage.getSnapshotsByCompany(companyId);
         const latestSnapshot = snapshots[0];
         
@@ -154,7 +162,7 @@ Qualitative Scores:
     }
   });
 
-  app.post("/api/mira/quick-insight", async (req: Request, res: Response) => {
+  app.post("/api/mira/quick-insight", isAuthenticated, async (req: Request, res: Response) => {
     try {
       const { type, data } = req.body;
       
