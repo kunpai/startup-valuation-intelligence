@@ -572,6 +572,29 @@ export async function registerRoutes(
         return res.status(400).json({ error: "Theme is required" });
       }
 
+      const apiKey = process.env.AI_INTEGRATIONS_OPENAI_API_KEY;
+      
+      // If no API key, return a mock story
+      if (!apiKey || apiKey === "sk-placeholder") {
+        const mockStory = `Once upon a time, there was ${theme.toLowerCase()}. ${characters ? `Together with ${characters}, they` : 'They'} embarked on a wonderful adventure.
+
+As the sun began to set, painting the sky in beautiful shades of orange and pink, our friends discovered something magical. They learned that kindness and courage can make even the biggest challenges feel small.
+
+When the stars came out to twinkle in the night sky, ${characters ? 'they all' : 'they'} felt warm and safe, knowing that tomorrow would bring new adventures. And as they closed their eyes to sleep, they dreamed of all the wonderful things yet to come.
+
+The end. Sweet dreams! 🌙✨`;
+
+        return res.json({
+          story: mockStory,
+          theme,
+          characters,
+          ageGroup,
+          length,
+          generatedAt: new Date().toISOString(),
+          note: "This is a demo story. Configure OPENAI_API_KEY for AI-generated stories."
+        });
+      }
+
       // Use OpenAI to generate a bedtime story
       const prompt = `Generate a ${length || 'short'} bedtime story for ${ageGroup || 'children aged 5-8'}.
 Theme: ${theme}
@@ -589,7 +612,7 @@ Please write the story in a warm, soothing narrative style.`;
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${process.env.AI_INTEGRATIONS_OPENAI_API_KEY || "sk-placeholder"}`
+          "Authorization": `Bearer ${apiKey}`
         },
         body: JSON.stringify({
           model: "gpt-4o",
