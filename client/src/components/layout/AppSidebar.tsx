@@ -23,6 +23,9 @@ import {
   HelpCircle,
   BookOpen,
   Users,
+  Trophy,
+  Dices,
+  Moon,
 } from "lucide-react";
 import { useLocation, Link } from "wouter";
 
@@ -78,6 +81,27 @@ export function AppSidebar({ onStartTour }: AppSidebarProps) {
     },
   ];
 
+  const extraItems = [
+    {
+      title: "Valorant Scores",
+      url: "/valorant",
+      icon: Trophy,
+      tourId: "valorant-nav",
+    },
+    {
+      title: "Stake.com",
+      url: "/stake",
+      icon: Dices,
+      tourId: "stake-nav",
+    },
+    {
+      title: "Bedtime Story",
+      url: "/bedtime-story",
+      icon: Moon,
+      tourId: "bedtime-nav",
+    },
+  ];
+
   return (
     <Sidebar variant="floating" collapsible="icon">
       <SidebarHeader className="h-16 flex items-center justify-center border-b border-sidebar-border/50">
@@ -96,6 +120,31 @@ export function AppSidebar({ onStartTour }: AppSidebarProps) {
           <SidebarGroupContent>
             <SidebarMenu>
               {items.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={location === item.url}
+                    tooltip={item.title}
+                    size="lg"
+                    data-tour={item.tourId}
+                    className="data-[active=true]:bg-primary/10 data-[active=true]:text-primary transition-all duration-200"
+                  >
+                    <Link href={item.url}>
+                      <item.icon className="!size-5" />
+                      <span className="font-medium">{item.title}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        <SidebarGroup>
+          <SidebarGroupLabel>Extras</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {extraItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton
                     asChild
